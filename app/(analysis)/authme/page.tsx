@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatDateTime } from "@/lib/common/format";
 import type {
   AuthmeOverview,
   AuthmeRecentLogin,
@@ -251,7 +251,7 @@ export default function AuthmeDashboardPage() {
                           {login.logged && <Badge>在线</Badge>}
                         </span>
                       </TableCell>
-                      <TableCell>{login.lastLoginAt}</TableCell>
+                      <TableCell>{formatDateTime(login.lastLoginAt) || login.lastLoginAt}</TableCell>
                       <TableCell className="text-right">
                         {login.ip ?? "—"}
                       </TableCell>
@@ -315,7 +315,7 @@ export default function AuthmeDashboardPage() {
                           </span>
                         </span>
                       </TableCell>
-                      <TableCell>{registration.regDate}</TableCell>
+                      <TableCell>{formatDateTime(registration.regDate) || registration.regDate}</TableCell>
                       <TableCell className="text-right">
                         {registration.regIp ?? "—"}
                       </TableCell>

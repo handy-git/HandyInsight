@@ -1,6 +1,7 @@
 import { addDays, format, startOfDay, startOfMonth } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
+import { formatDateTime } from "@/lib/common/format";
 import { query } from "@/lib/server/mysql";
 import type { Paginated } from "@/lib/common/types";
 import type {
@@ -14,11 +15,12 @@ import type {
 } from "@/lib/plugins/playersignin/types";
 
 const DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
-const PAGE_SIZE = 20;
 
-function formatDateTime(date: Date): string {
+/** SQL 参数用的日期字符串。 */
+function toSqlDateTime(date: Date): string {
   return format(date, DATE_TIME_FORMAT);
 }
+const PAGE_SIZE = 20;
 
 /* ---------- 总览与排行：30 秒进程内缓存 ---------- */
 
@@ -43,7 +45,7 @@ async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
 
 export async function getSignInOverview(): Promise<SignInOverview> {
   return cached("overview", async () => {
-    const dayStart = formatDateTime(startOfDay(new Date()));
+    const dayStart = toSqlDateTime(startOfDay(new Date()));
     const rows = await query<RowDataPacket[]>(
       `SELECT
          (SELECT COUNT(*) FROM player_sign_in WHERE sign_in_date >= ?) AS todaySigns,
@@ -77,7 +79,7 @@ export async function getSignInTrend(
        FROM player_sign_in
       WHERE sign_in_date >= ?
       GROUP BY DATE(sign_in_date)`,
-    [formatDateTime(start)],
+    [toSqlDateTime(start)],
   );
   const byDate = new Map(
     rows.map((row) => [String(row.date), Number(row.signs)]),
@@ -92,7 +94,7 @@ export async function getSignInTrend(
 /* ---------- 今日签到名单 ---------- */
 
 export async function getTodaySignIns(): Promise<TodaySignIn[]> {
-  const dayStart = formatDateTime(startOfDay(new Date()));
+  const dayStart = toSqlDateTime(startOfDay(new Date()));
   const rows = await query<RowDataPacket[]>(
     `SELECT player_uuid AS uuid,
             player_name AS name,
@@ -107,7 +109,7 @@ export async function getTodaySignIns(): Promise<TodaySignIn[]> {
   return rows.map((row) => ({
     uuid: String(row.uuid),
     name: String(row.name),
-    time: String(row.signInDate).slice(11),
+    time: formatDateTime(String(row.signInDate)).slice(11),
     rank: Number(row.signRank),
   }));
 }
@@ -140,7 +142,7 @@ export async function getSignInPlayers(
   keyword: string,
   page: number,
 ): Promise<Paginated<SignInPlayerItem>> {
-  const monthStart = formatDateTime(startOfMonth(new Date()));
+  const monthStart = toSqlDateTime(startOfMonth(new Date()));
   const like = `%${keyword}%`;
   const offset = (page - 1) * PAGE_SIZE;
   const where = keyword ? "WHERE s.player_name LIKE ?" : "";
@@ -176,7 +178,7 @@ export async function getSignInPlayers(
       name: String(row.name),
       totalSigns: Number(row.totalSigns),
       monthSigns: Number(row.monthSigns),
-      lastSignAt: row.lastSignAt ? String(row.lastSignAt) : null,
+      lastSignAt: row.lastSignAt ? formatDateTime(String(row.lastSignAt)) : null,
       cards: Number(row.cards),
     })),
     total: Number(countRows[0]?.total ?? 0),
@@ -191,7 +193,7 @@ export async function getSignInPlayerDetail(
   uuid: string,
 ): Promise<SignInPlayerDetail | null> {
   const now = new Date();
-  const monthStart = formatDateTime(startOfMonth(now));
+  const monthStart = toSqlDateTime(startOfMonth(now));
 
   const rows = await query<RowDataPacket[]>(
     `SELECT player_uuid AS uuid,
@@ -250,7 +252,7 @@ export async function getSignInPlayerDetail(
     totalSigns: Number(row.totalSigns),
     monthSigns: Number(row.monthSigns),
     streak,
-    lastSignAt: row.lastSignAt ? String(row.lastSignAt) : null,
+    lastSignAt: row.lastSignAt ? formatDateTime(String(row.lastSignAt)) : null,
     cards: cardRows.map((card) => ({
       cardType: String(card.cardType),
       cardMonth: card.cardMonth ? String(card.cardMonth) : null,
@@ -281,7 +283,7 @@ export async function getSignInRecords(
   );
   return {
     items: rows.map((row) => ({
-      signInDate: String(row.signInDate),
+      signInDate: formatDateTime(String(row.signInDate)),
       rank: Number(row.signRank),
     })),
     total: Number(countRows[0]?.total ?? 0),

@@ -29,11 +29,11 @@ Minecraft 插件 MySQL 数据的只读分析面板，可插拔模块架构。
 ## 关键结构
 
 - `app/setup` MySQL 配置页 + 设置弹窗（数据库/常规两个 tab）；`app/(analysis)` 分析页面组
-- `app/(analysis)/overview/players` 总览分组：跨插件聚合玩家列表与详情（活动时间线 + 分插件区块）
+- `app/(analysis)/overview/players` 总览分组：跨插件全服玩家列表与详情（活动时间线 + 分插件区块）
 - 各插件独立页面互不影响：`dashboard` + `players`（PlayerTime）、`signin`（PlayerSignIn）、`authme`（AuthMe），各自有独立的列表与详情
-- `app/api/mysql/*` 配置链路；`app/api/<插件id>/*` 各插件只读分析接口；`app/api/players/*` 聚合玩家接口（列表/详情/时间线）
-- `lib/server/player-registry.ts` 跨插件玩家目录（UUID 主键 + AuthMe 名称桥接，30s 缓存）；`lib/server/unified-players.ts` 聚合玩家查询
-- `lib/common/avatar.ts` mc-heads.net 头像 URL；`lib/common/unified.ts` 聚合玩家共享类型（客户端/服务端共用）
+- `app/api/mysql/*` 配置链路；`app/api/<插件id>/*` 各插件只读分析接口；`app/api/players/*` 全服玩家接口（列表/详情/时间线）
+- `lib/server/player-registry.ts` 跨插件玩家目录（UUID 主键 + AuthMe 名称桥接，30s 缓存）；`lib/server/unified-players.ts` 全服玩家查询
+- `lib/common/avatar.ts` mc-heads.net 头像 URL；`lib/common/unified.ts` 全服玩家共享类型（客户端/服务端共用）
 - `lib/server/config.ts` 读写 `.data/mysql.json`（含明文密码，已 gitignore，绝不返回浏览器）
 - 总览/排行/玩家目录 30 秒进程内缓存；趋势按范围有界查询
 

@@ -124,7 +124,7 @@ export default function AnalysisLayout({
                       render={<Link href="/overview/players" />}
                     >
                       <LayoutDashboardIcon />
-                      <span>聚合玩家</span>
+                      <span>全服玩家</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

@@ -1,5 +1,6 @@
 import type { RowDataPacket } from "mysql2/promise";
 
+import { formatDateTime } from "@/lib/common/format";
 import { getEnabledPlugins, query } from "@/lib/server/mysql";
 
 /**
@@ -100,7 +101,9 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
         name,
         registeredAt: null,
         sources: ["playertime"],
-        lastActiveAt: row.lastActiveAt ? String(row.lastActiveAt) : null,
+        lastActiveAt: row.lastActiveAt
+          ? formatDateTime(String(row.lastActiveAt))
+          : null,
       });
     }
   }
@@ -115,9 +118,10 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
         existing.sources.push("playersignin");
         if (
           row.lastActiveAt &&
-          (!existing.lastActiveAt || String(row.lastActiveAt) > existing.lastActiveAt)
+          (!existing.lastActiveAt ||
+            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
         ) {
-          existing.lastActiveAt = String(row.lastActiveAt);
+          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
         }
       } else {
         byUuid.set(uuid, {
@@ -126,7 +130,9 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playersignin"],
-          lastActiveAt: row.lastActiveAt ? String(row.lastActiveAt) : null,
+          lastActiveAt: row.lastActiveAt
+            ? formatDateTime(String(row.lastActiveAt))
+            : null,
         });
       }
     }
@@ -142,14 +148,15 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
         if (existing) {
           existing.sources.push("authme");
           existing.registeredAt = row.registeredAt
-            ? String(row.registeredAt)
+            ? formatDateTime(String(row.registeredAt))
             : null;
           existing.name = realname;
           if (
             row.lastActiveAt &&
-            (!existing.lastActiveAt || String(row.lastActiveAt) > existing.lastActiveAt)
+            (!existing.lastActiveAt ||
+              formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
           ) {
-            existing.lastActiveAt = String(row.lastActiveAt);
+            existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
           }
         }
       } else {
@@ -158,9 +165,13 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           key: `name:${username}`,
           uuid: null,
           name: realname,
-          registeredAt: row.registeredAt ? String(row.registeredAt) : null,
+          registeredAt: row.registeredAt
+            ? formatDateTime(String(row.registeredAt))
+            : null,
           sources: ["authme"],
-          lastActiveAt: row.lastActiveAt ? String(row.lastActiveAt) : null,
+          lastActiveAt: row.lastActiveAt
+            ? formatDateTime(String(row.lastActiveAt))
+            : null,
         });
       }
     }

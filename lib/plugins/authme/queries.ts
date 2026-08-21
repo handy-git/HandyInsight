@@ -1,6 +1,7 @@
 import { addDays, format, startOfDay } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
+import { formatDateTime } from "@/lib/common/format";
 import { query } from "@/lib/server/mysql";
 import type { Paginated } from "@/lib/common/types";
 import type {
@@ -121,7 +122,7 @@ export async function getRecentLogins(): Promise<AuthmeRecentLogin[]> {
   return rows.map((row) => ({
     username: String(row.username),
     realname: String(row.realname),
-    lastLoginAt: String(row.lastLoginAt),
+    lastLoginAt: formatDateTime(String(row.lastLoginAt)),
     ip: row.ip ? String(row.ip) : null,
     logged: Number(row.isLogged) === 1,
   }));
@@ -140,7 +141,7 @@ export async function getRecentRegistrations(): Promise<
   return rows.map((row) => ({
     username: String(row.username),
     realname: String(row.realname),
-    regDate: String(row.regDate),
+    regDate: formatDateTime(String(row.regDate)),
     regIp: row.regip ? String(row.regip) : null,
   }));
 }
@@ -180,8 +181,8 @@ export async function getAuthmeAccounts(
       username: String(row.username),
       realname: String(row.realname),
       email: row.email ? String(row.email) : null,
-      regDate: row.regDate ? String(row.regDate) : null,
-      lastLoginAt: row.lastLoginAt ? String(row.lastLoginAt) : null,
+      regDate: row.regDate ? formatDateTime(String(row.regDate)) : null,
+      lastLoginAt: row.lastLoginAt ? formatDateTime(String(row.lastLoginAt)) : null,
       ip: row.ip ? String(row.ip) : null,
       logged: Number(row.isLogged) === 1,
       world: String(row.world),
@@ -216,9 +217,9 @@ export async function getAuthmeAccountDetail(
     username: String(row.username),
     realname: String(row.realname),
     email: row.email ? String(row.email) : null,
-    regDate: row.regDate ? String(row.regDate) : null,
+    regDate: row.regDate ? formatDateTime(String(row.regDate)) : null,
     regIp: row.regip ? String(row.regip) : null,
-    lastLoginAt: row.lastLoginAt ? String(row.lastLoginAt) : null,
+    lastLoginAt: row.lastLoginAt ? formatDateTime(String(row.lastLoginAt)) : null,
     ip: row.ip ? String(row.ip) : null,
     logged: Number(row.isLogged) === 1,
     hasSession: Number(row.hasSession) === 1,

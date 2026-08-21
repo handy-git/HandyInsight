@@ -1,6 +1,7 @@
 import { addDays, format, startOfDay, startOfWeek } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
+import { formatDateTime } from "@/lib/common/format";
 import { query } from "@/lib/server/mysql";
 import type {
   OnlinePlayer,
@@ -16,11 +17,12 @@ import type {
 } from "@/lib/plugins/playertime/types";
 
 const DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
-const PAGE_SIZE = 20;
 
-function formatDateTime(date: Date): string {
+/** SQL 参数用的日期字符串。 */
+function toSqlDateTime(date: Date): string {
   return format(date, DATE_TIME_FORMAT);
 }
+const PAGE_SIZE = 20;
 
 /** 当前周期键，与 player_time 表中的周期字段对应。 */
 function currentPeriodKeys(now = new Date()) {
@@ -60,8 +62,8 @@ async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
 export async function getOverview(): Promise<PlayertimeOverview> {
   return cached("overview", async () => {
     const now = new Date();
-    const dayStart = formatDateTime(startOfDay(now));
-    const nowText = formatDateTime(now);
+    const dayStart = toSqlDateTime(startOfDay(now));
+    const nowText = toSqlDateTime(now);
 
     const onlineRows = await query<RowDataPacket[]>(
       `SELECT COUNT(DISTINCT player_uuid) AS onlinePlayers
@@ -113,7 +115,7 @@ async function querySessionsBetween(
   uuid?: string,
 ): Promise<SessionRow[]> {
   const conditions = ["login_time < ?", "(quit_time IS NULL OR quit_time > ?)"];
-  const params: unknown[] = [formatDateTime(end), formatDateTime(start)];
+  const params: unknown[] = [toSqlDateTime(end), toSqlDateTime(start)];
   if (uuid) {
     conditions.push("player_uuid = ?");
     params.push(uuid);
@@ -195,7 +197,7 @@ export async function getOnlinePlayers(): Promise<OnlinePlayer[]> {
   return rows.map((row) => ({
     uuid: String(row.uuid),
     name: String(row.name),
-    loginTime: String(row.loginTime),
+    loginTime: formatDateTime(String(row.loginTime)),
     sessionSeconds: Number(row.sessionSeconds),
   }));
 }
@@ -339,7 +341,7 @@ export async function getPlayerDetail(
     uuid: String(row.uuid),
     name: String(row.name),
     online: row.loginTime !== null && row.loginTime !== undefined,
-    loginTime: row.loginTime ? String(row.loginTime) : null,
+    loginTime: row.loginTime ? formatDateTime(String(row.loginTime)) : null,
     todaySeconds: Number(row.todaySeconds),
     weekSeconds: Number(row.weekSeconds),
     monthSeconds: Number(row.monthSeconds),
@@ -370,8 +372,8 @@ export async function getPlayerSessions(
   );
   return {
     items: rows.map((row) => ({
-      loginTime: String(row.loginTime),
-      quitTime: row.quitTime ? String(row.quitTime) : null,
+      loginTime: formatDateTime(String(row.loginTime)),
+      quitTime: row.quitTime ? formatDateTime(String(row.quitTime)) : null,
       seconds: Number(row.seconds),
     })),
     total: Number(countRows[0]?.total ?? 0),

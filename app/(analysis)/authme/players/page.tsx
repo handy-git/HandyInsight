@@ -43,7 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatDateTime } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { AuthmeAccountItem } from "@/lib/plugins/authme/types";
 
@@ -167,8 +167,8 @@ export default function AuthmePlayersPage() {
                         </span>
                       </TableCell>
                     <TableCell>{account.email ?? "—"}</TableCell>
-                    <TableCell>{account.regDate ?? "—"}</TableCell>
-                    <TableCell>{account.lastLoginAt ?? "从未登录"}</TableCell>
+                    <TableCell>{formatDateTime(account.regDate) || "—"}</TableCell>
+                    <TableCell>{formatDateTime(account.lastLoginAt) || "从未登录"}</TableCell>
                     <TableCell className="text-right">
                       {account.ip ?? "—"}
                     </TableCell>

@@ -1,6 +1,7 @@
 import { addDays, format, startOfDay } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
+import { formatDateTime } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import { getPlayerDetail, getTrend } from "@/lib/plugins/playertime/queries";
 import {
@@ -20,6 +21,11 @@ import { getEnabledPlugins, query } from "@/lib/server/mysql";
  */
 
 const DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+/** SQL 参数用的日期字符串。 */
+function toSqlDateTime(date: Date): string {
+  return format(date, DATE_TIME_FORMAT);
+}
 const PAGE_SIZE = 20;
 
 import type {
@@ -28,10 +34,6 @@ import type {
   UnifiedPlayerDetail,
   UnifiedPlayerItem,
 } from "@/lib/common/unified";
-
-function formatDateTime(date: Date): string {
-  return format(date, DATE_TIME_FORMAT);
-}
 
 function formatSeconds(totalSeconds: number): string {
   const seconds = Math.max(0, Math.floor(totalSeconds));
@@ -248,7 +250,7 @@ export async function getUnifiedPlayerTimeline(
   const events: TimelineEvent[] = [];
 
   const tasks: Promise<void>[] = [];
-  const weekAgo = formatDateTime(startOfDay(addDays(new Date(), -7)));
+  const weekAgo = toSqlDateTime(startOfDay(addDays(new Date(), -7)));
 
   if (uuid && enabled.has("playertime")) {
     tasks.push(
@@ -262,10 +264,10 @@ export async function getUnifiedPlayerTimeline(
           [uuid, weekAgo],
         );
         for (const row of rows) {
-          const login = String(row.loginTime);
+          const login = formatDateTime(String(row.loginTime));
           events.push({ at: login, type: "login", text: "进入服务器" });
           if (row.quitTime) {
-            const quit = String(row.quitTime);
+            const quit = formatDateTime(String(row.quitTime));
             const duration = formatSeconds(
               (new Date(quit.replace(" ", "T")).getTime() -
                 new Date(login.replace(" ", "T")).getTime()) /
@@ -292,7 +294,7 @@ export async function getUnifiedPlayerTimeline(
         }
         for (const record of items.slice(0, 50)) {
           events.push({
-            at: record.signInDate,
+            at: formatDateTime(record.signInDate),
             type: "signin",
             text: `签到（当日第 ${record.rank} 名）`,
           });

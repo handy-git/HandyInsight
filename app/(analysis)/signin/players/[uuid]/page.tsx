@@ -47,7 +47,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatDateTime } from "@/lib/common/format";
 import { cn } from "@/lib/utils";
 import type { Paginated } from "@/lib/common/types";
 import type {
@@ -150,7 +150,7 @@ export default function SignInPlayerDetailPage({
           <CardTitle className="flex items-center gap-3">
             <Avatar size="lg">
               <AvatarImage
-                src={playerAvatarUrl(detail.uuid, 64)}
+                src={playerAvatarUrl(detail.name, 64)}
                 alt={detail.name}
               />
               <AvatarFallback>
@@ -162,7 +162,9 @@ export default function SignInPlayerDetailPage({
           </CardTitle>
           <CardDescription>
             {detail.uuid}
-            {detail.lastSignAt ? ` · 最近签到于 ${detail.lastSignAt}` : ""}
+            {detail.lastSignAt
+              ? ` · 最近签到于 ${formatDateTime(detail.lastSignAt)}`
+              : ""}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -302,7 +304,7 @@ export default function SignInPlayerDetailPage({
                 <TableBody>
                   {records.items.map((record, index) => (
                     <TableRow key={`${record.signInDate}-${index}`}>
-                      <TableCell>{record.signInDate}</TableCell>
+                      <TableCell>{formatDateTime(record.signInDate) || record.signInDate}</TableCell>
                       <TableCell className="text-right">
                         <Badge variant={record.rank <= 3 ? "default" : "outline"}>
                           第 {record.rank} 名

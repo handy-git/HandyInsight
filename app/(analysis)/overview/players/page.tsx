@@ -44,7 +44,11 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson, formatSeconds } from "@/lib/common/format";
+import {
+  fetchJson,
+  formatDateTime,
+  formatSeconds,
+} from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { UnifiedPlayerItem } from "@/lib/common/unified";
 
@@ -54,12 +58,6 @@ const SORT_OPTIONS = [
   { value: "playtime", label: "在线时长" },
   { value: "signin", label: "签到次数" },
 ] as const;
-
-const SOURCE_LABELS: Record<string, string> = {
-  playertime: "时长",
-  playersignin: "签到",
-  authme: "账户",
-};
 
 function relativeTime(dateTime: string | null): string {
   if (!dateTime) return "从未上线";
@@ -71,7 +69,7 @@ function relativeTime(dateTime: string | null): string {
   if (hours < 24) return `${hours} 小时前`;
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days} 天前`;
-  return dateTime.slice(0, 10);
+  return formatDateTime(dateTime) || dateTime;
 }
 
 export default function UnifiedPlayersPage() {
@@ -112,9 +110,9 @@ export default function UnifiedPlayersPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>玩家中心</CardTitle>
+        <CardTitle>全服玩家</CardTitle>
         <CardDescription>
-          跨插件的玩家全景视图；接入 AuthMe 后可见注册但从未上线的玩家
+          全服玩家跨插件全景视图；接入 AuthMe 后可见注册但从未上线的玩家
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -179,7 +177,6 @@ export default function UnifiedPlayersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>玩家</TableHead>
-                  <TableHead>来源</TableHead>
                   <TableHead>注册时间</TableHead>
                   <TableHead className="text-right">总时长</TableHead>
                   <TableHead className="text-right">签到</TableHead>
@@ -191,16 +188,13 @@ export default function UnifiedPlayersPage() {
                   <TableRow
                     key={player.key}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/players/${player.key}`)}
+                    onClick={() => router.push(`/overview/players/${player.key}`)}
                   >
                     <TableCell>
                       <span className="flex items-center gap-2">
                         <Avatar size="sm">
                           <AvatarImage
-                            src={playerAvatarUrl(
-                              player.uuid ?? player.name,
-                              32,
-                            )}
+                            src={playerAvatarUrl(player.name, 32)}
                             alt={player.name}
                           />
                           <AvatarFallback>
@@ -211,16 +205,7 @@ export default function UnifiedPlayersPage() {
                         {player.online && <Badge>在线</Badge>}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <span className="flex gap-1">
-                        {player.sources.map((source) => (
-                          <Badge key={source} variant="outline">
-                            {SOURCE_LABELS[source] ?? source}
-                          </Badge>
-                        ))}
-                      </span>
-                    </TableCell>
-                    <TableCell>{player.registeredAt?.slice(0, 10) ?? "—"}</TableCell>
+                    <TableCell>{formatDateTime(player.registeredAt) || "—"}</TableCell>
                     <TableCell className="text-right">
                       {player.totalSeconds > 0
                         ? formatSeconds(player.totalSeconds)

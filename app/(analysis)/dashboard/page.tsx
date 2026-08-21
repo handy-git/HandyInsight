@@ -40,7 +40,12 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson, formatSeconds, secondsToHours } from "@/lib/common/format";
+import {
+  fetchJson,
+  formatDateTime,
+  formatSeconds,
+  secondsToHours,
+} from "@/lib/common/format";
 import type {
   OnlinePlayer,
   Paginated,
@@ -241,7 +246,7 @@ export default function DashboardPage() {
                         <span className="flex items-center gap-2">
                           <Avatar size="sm">
                             <AvatarImage
-                              src={playerAvatarUrl(player.uuid, 32)}
+                              src={playerAvatarUrl(player.name, 32)}
                               alt={player.name}
                             />
                             <AvatarFallback>
@@ -251,7 +256,7 @@ export default function DashboardPage() {
                           <span className="font-medium">{player.name}</span>
                         </span>
                       </TableCell>
-                      <TableCell>{player.loginTime}</TableCell>
+                      <TableCell>{formatDateTime(player.loginTime) || player.loginTime}</TableCell>
                       <TableCell className="text-right">
                         <Badge variant="secondary">
                           {formatSeconds(player.sessionSeconds)}
@@ -308,7 +313,7 @@ export default function DashboardPage() {
                         <span className="flex items-center gap-2">
                           <Avatar size="sm">
                             <AvatarImage
-                              src={playerAvatarUrl(entry.uuid, 32)}
+                              src={playerAvatarUrl(entry.name, 32)}
                               alt={entry.name}
                             />
                             <AvatarFallback>

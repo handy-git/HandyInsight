@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatDateTime } from "@/lib/common/format";
 import type { AuthmeAccountDetail } from "@/lib/plugins/authme/types";
 
 export default function AuthmeAccountDetailPage({
@@ -140,7 +140,7 @@ export default function AuthmeAccountDetailPage({
           </CardTitle>
           <CardDescription>
             {detail.lastLoginAt
-              ? `最近登录于 ${detail.lastLoginAt}`
+              ? `最近登录于 ${formatDateTime(detail.lastLoginAt)}`
               : "从未登录过"}
           </CardDescription>
         </CardHeader>
@@ -148,8 +148,11 @@ export default function AuthmeAccountDetailPage({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "注册时间", value: detail.regDate ?? "—" },
-          { title: "最近登录", value: detail.lastLoginAt ?? "从未登录" },
+          { title: "注册时间", value: formatDateTime(detail.regDate) || "—" },
+          {
+            title: "最近登录",
+            value: formatDateTime(detail.lastLoginAt) || "从未登录",
+          },
           {
             title: "登录状态",
             value: detail.logged ? "登录中" : "离线",

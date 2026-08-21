@@ -140,7 +140,7 @@ export default function SignInPlayersPage() {
                         <span className="flex items-center gap-2">
                           <Avatar size="sm">
                             <AvatarImage
-                              src={playerAvatarUrl(player.uuid, 32)}
+                              src={playerAvatarUrl(player.name, 32)}
                               alt={player.name}
                             />
                             <AvatarFallback>
@@ -157,7 +157,7 @@ export default function SignInPlayersPage() {
                       {player.monthSigns} 次
                     </TableCell>
                     <TableCell className="text-right">
-                      {player.lastSignAt ?? "—"}
+                      {player.lastSignAt || "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       {player.cards} 张

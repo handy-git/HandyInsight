@@ -1,9 +1,10 @@
 /**
  * Minecraft 玩家头像（mc-heads.net）。
  *
- * - 按 UUID 查询正版皮肤；查不到（离线服等）自动回退默认头像，不裂图
- * - 浏览器直接请求第三方服务，只暴露 UUID，不涉及任何凭据
+ * 统一按玩家名称查询：离线服的 UUID 在 Mojang 不存在，按 UUID 无法取到皮肤；
+ * 按名称可命中同名正版账户的皮肤，查不到时服务自动回退默认头像，不裂图。
+ * 浏览器直接请求第三方服务，只暴露玩家名，不涉及任何凭据。
  */
-export function playerAvatarUrl(uuidOrName: string, size = 64): string {
-  return `https://mc-heads.net/avatar/${encodeURIComponent(uuidOrName)}/${size}`;
+export function playerAvatarUrl(playerName: string, size = 64): string {
+  return `https://mc-heads.net/avatar/${encodeURIComponent(playerName)}/${size}`;
 }

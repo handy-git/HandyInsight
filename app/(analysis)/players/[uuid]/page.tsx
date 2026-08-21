@@ -53,7 +53,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson, formatSeconds, secondsToHours } from "@/lib/common/format";
+import {
+  fetchJson,
+  formatDateTime,
+  formatSeconds,
+  secondsToHours,
+} from "@/lib/common/format";
 import type {
   Paginated,
   PlayerDetail,
@@ -159,7 +164,7 @@ export default function PlayerDetailPage({
             <CardTitle className="flex items-center gap-3">
               <Avatar size="lg">
                 <AvatarImage
-                  src={playerAvatarUrl(detail.uuid, 64)}
+                  src={playerAvatarUrl(detail.name, 64)}
                   alt={detail.name}
                 />
                 <AvatarFallback>
@@ -174,7 +179,7 @@ export default function PlayerDetailPage({
             <CardDescription>
               {detail.uuid}
               {detail.online && detail.loginTime
-                ? ` · 本次登录于 ${detail.loginTime}`
+                ? ` · 本次登录于 ${formatDateTime(detail.loginTime)}`
                 : ""}
             </CardDescription>
           </div>
@@ -258,9 +263,11 @@ export default function PlayerDetailPage({
                 <TableBody>
                   {sessions.items.map((session, index) => (
                     <TableRow key={`${session.loginTime}-${index}`}>
-                      <TableCell>{session.loginTime}</TableCell>
+                      <TableCell>{formatDateTime(session.loginTime) || session.loginTime}</TableCell>
                       <TableCell>
-                        {session.quitTime ?? (
+                        {session.quitTime ? (
+                          formatDateTime(session.quitTime)
+                        ) : (
                           <Badge variant="default">进行中</Badge>
                         )}
                       </TableCell>

@@ -10,6 +10,15 @@ export function formatSeconds(totalSeconds: number): string {
   return `${seconds % 60} 秒`;
 }
 
+/**
+ * 归一化数据库日期字符串为 yyyy-MM-dd HH:mm:ss。
+ * 去掉毫秒精度（DATETIME(3)）与 T 分隔；空值返回空字符串。
+ */
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "";
+  return value.replace("T", " ").slice(0, 19);
+}
+
 /** 秒数转小时（保留 1 位小数），用于图表展示。 */
 export function secondsToHours(seconds: number): number {
   return Math.round((seconds / 3600) * 10) / 10;

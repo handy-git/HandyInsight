@@ -139,7 +139,7 @@ export default function PlayersPage() {
                       <span className="flex items-center gap-2">
                         <Avatar size="sm">
                           <AvatarImage
-                            src={playerAvatarUrl(player.uuid, 32)}
+                            src={playerAvatarUrl(player.name, 32)}
                             alt={player.name}
                           />
                           <AvatarFallback>

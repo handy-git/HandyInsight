@@ -212,7 +212,7 @@ export default function SignInDashboardPage() {
                         <span className="flex items-center gap-2">
                           <Avatar size="sm">
                             <AvatarImage
-                              src={playerAvatarUrl(item.uuid, 32)}
+                              src={playerAvatarUrl(item.name, 32)}
                               alt={item.name}
                             />
                             <AvatarFallback>
@@ -274,7 +274,7 @@ export default function SignInDashboardPage() {
                         <span className="flex items-center gap-2">
                           <Avatar size="sm">
                             <AvatarImage
-                              src={playerAvatarUrl(entry.uuid, 32)}
+                              src={playerAvatarUrl(entry.name, 32)}
                               alt={entry.name}
                             />
                             <AvatarFallback>

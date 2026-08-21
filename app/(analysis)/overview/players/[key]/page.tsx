@@ -65,7 +65,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson, formatSeconds, secondsToHours } from "@/lib/common/format";
+import {
+  fetchJson,
+  formatDateTime,
+  formatSeconds,
+  secondsToHours,
+} from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { SessionItem } from "@/lib/plugins/playertime/types";
 import type { SignInRecord } from "@/lib/plugins/playersignin/types";
@@ -159,7 +164,7 @@ export default function UnifiedPlayerDetailPage({
         <AlertDescription>
           {error}
           <Link href="/players" className="ml-2 underline">
-            返回聚合玩家
+            返回全服玩家
           </Link>
         </AlertDescription>
       </Alert>
@@ -203,7 +208,7 @@ export default function UnifiedPlayerDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink render={<Link href="/overview/players" />}>
-              聚合玩家
+              全服玩家
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -218,7 +223,7 @@ export default function UnifiedPlayerDetailPage({
           <CardTitle className="flex items-center gap-3">
             <Avatar size="lg">
               <AvatarImage
-                src={playerAvatarUrl(detail.uuid ?? detail.name, 64)}
+                src={playerAvatarUrl(detail.name, 64)}
                 alt={detail.name}
               />
               <AvatarFallback>
@@ -252,7 +257,7 @@ export default function UnifiedPlayerDetailPage({
           </CardTitle>
           <CardDescription>
             {detail.registeredAt
-              ? `注册于 ${detail.registeredAt}`
+              ? `注册于 ${formatDateTime(detail.registeredAt)}`
               : "注册时间未知（未接入 AuthMe）"}
           </CardDescription>
         </CardHeader>
@@ -277,7 +282,7 @@ export default function UnifiedPlayerDetailPage({
           {
             title: "最近活跃",
             value: detail.lastActiveAt
-              ? detail.lastActiveAt.slice(0, 16)
+              ? formatDateTime(detail.lastActiveAt)
               : "从未上线",
           },
         ].map((card) => (
@@ -308,7 +313,7 @@ export default function UnifiedPlayerDetailPage({
                     <span className="flex flex-col">
                       <span className="text-sm">{event.text}</span>
                       <span className="text-xs text-muted-foreground">
-                        {event.at}
+                        {formatDateTime(event.at) || event.at}
                       </span>
                     </span>
                   </li>
@@ -382,9 +387,11 @@ export default function UnifiedPlayerDetailPage({
                     <TableBody>
                       {sessions.items.map((session, index) => (
                         <TableRow key={`${session.loginTime}-${index}`}>
-                          <TableCell>{session.loginTime}</TableCell>
+                          <TableCell>{formatDateTime(session.loginTime) || session.loginTime}</TableCell>
                           <TableCell>
-                            {session.quitTime ?? (
+                            {session.quitTime ? (
+                              formatDateTime(session.quitTime)
+                            ) : (
                               <Badge variant="default">进行中</Badge>
                             )}
                           </TableCell>
@@ -546,7 +553,7 @@ export default function UnifiedPlayerDetailPage({
                     <TableBody>
                       {records.items.map((record, index) => (
                         <TableRow key={`${record.signInDate}-${index}`}>
-                          <TableCell>{record.signInDate}</TableCell>
+                          <TableCell>{formatDateTime(record.signInDate) || record.signInDate}</TableCell>
                           <TableCell className="text-right">
                             <Badge
                               variant={record.rank <= 3 ? "default" : "outline"}

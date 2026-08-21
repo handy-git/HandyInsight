@@ -7,6 +7,7 @@ import {
   BarChart3Icon,
   CalendarCheckIcon,
   SettingsIcon,
+  ShieldCheckIcon,
   UsersIcon,
 } from "lucide-react";
 
@@ -55,6 +56,13 @@ const PLUGIN_NAV: Record<
     items: [
       { href: "/signin", label: "签到总览", icon: CalendarCheckIcon },
       { href: "/signin/players", label: "签到玩家", icon: UsersIcon },
+    ],
+  },
+  authme: {
+    label: "AuthMe · 账户",
+    items: [
+      { href: "/authme", label: "账户总览", icon: ShieldCheckIcon },
+      { href: "/authme/players", label: "账户列表", icon: UsersIcon },
     ],
   },
 };

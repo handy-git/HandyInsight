@@ -28,7 +28,7 @@ Minecraft 插件 MySQL 数据的只读分析面板，可插拔模块架构。
 
 ## 关键结构
 
-- `app/setup` MySQL 配置页 + 设置弹窗（数据库/常规两个 tab）；`app/(analysis)` 分析页面组（dashboard / players / signin）
+- `app/setup` MySQL 配置页 + 设置弹窗（数据库/常规两个 tab）；`app/(analysis)` 分析页面组（dashboard / players / signin / authme）
 - `app/api/mysql/*` 配置链路；`app/api/<插件id>/*` 各插件只读分析接口
 - `lib/server/config.ts` 读写 `.data/mysql.json`（含明文密码，已 gitignore，绝不返回浏览器）
 - 总览/排行 30 秒进程内缓存；趋势按范围有界查询

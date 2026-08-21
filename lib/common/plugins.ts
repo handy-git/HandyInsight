@@ -32,6 +32,13 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     tables: ["player_sign_in", "player_sign_card"],
     landing: "/signin",
   },
+  {
+    id: "authme",
+    name: "AuthMe",
+    description: "账户认证",
+    tables: ["authme"],
+    landing: "/authme",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

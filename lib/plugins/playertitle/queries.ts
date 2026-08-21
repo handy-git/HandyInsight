@@ -1,0 +1,329 @@
+import { addDays, format } from "date-fns";
+import type { RowDataPacket } from "mysql2/promise";
+
+import { formatDateTime } from "@/lib/common/format";
+import type { Paginated } from "@/lib/common/types";
+import {
+  titleListQuerySchema,
+  titlePlayersQuerySchema,
+  titleUuidSchema,
+} from "@/lib/plugins/playertitle/schemas";
+import type {
+  TitleCoinRankEntry,
+  TitleListItem,
+  TitleOverview,
+  TitlePlayerDetail,
+  TitlePlayerItem,
+  TitlePlayerTitle,
+  TitleRankEntry,
+} from "@/lib/plugins/playertitle/types";
+import { query } from "@/lib/server/mysql";
+
+const PAGE_SIZE = 20;
+
+/** SQL 参数用的日期字符串。 */
+function toSqlDateTime(date: Date): string {
+  return format(date, "yyyy-MM-dd HH:mm:ss");
+}
+
+export { titleListQuerySchema, titlePlayersQuerySchema, titleUuidSchema };
+
+/* ---------- 总览与排行：30 秒进程内缓存 ---------- */
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const cache = new Map<string, CacheEntry<unknown>>();
+
+async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
+  const hit = cache.get(key) as CacheEntry<T> | undefined;
+  if (hit && hit.expiresAt > Date.now()) {
+    return hit.value;
+  }
+  const value = await loader();
+  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
+  return value;
+}
+
+export async function getTitleOverview(): Promise<TitleOverview> {
+  return cached("overview", async () => {
+    const rows = await query<RowDataPacket[]>(
+      `SELECT
+         (SELECT COUNT(*) FROM title_list WHERE is_hide = 0) AS totalTitles,
+         (SELECT COUNT(DISTINCT player_uuid) FROM title_player WHERE player_uuid IS NOT NULL) AS totalPlayers,
+         (SELECT COUNT(DISTINCT player_uuid) FROM title_player WHERE is_use = 1) AS usingPlayers,
+         (SELECT COALESCE(SUM(amount), 0) FROM title_coin) AS totalCoins`,
+    );
+    const row = rows[0] ?? {};
+    return {
+      totalTitles: Number(row.totalTitles ?? 0),
+      totalPlayers: Number(row.totalPlayers ?? 0),
+      usingPlayers: Number(row.usingPlayers ?? 0),
+      totalCoins: Number(row.totalCoins ?? 0),
+    };
+  });
+}
+
+/** 热门称号排行（按持有玩家数）。 */
+export async function getTitleRanking(): Promise<TitleRankEntry[]> {
+  return cached("ranking", async () => {
+    const rows = await query<RowDataPacket[]>(
+      `SELECT title_id AS titleId, title_name AS titleName,
+              COUNT(DISTINCT player_uuid) AS players
+         FROM title_player
+        WHERE player_uuid IS NOT NULL
+        GROUP BY title_id, title_name
+        ORDER BY players DESC, titleName ASC
+        LIMIT 20`,
+    );
+    return rows.map((row, index) => ({
+      rank: index + 1,
+      titleId: row.titleId === null ? null : Number(row.titleId),
+      titleName: String(row.titleName),
+      players: Number(row.players),
+    }));
+  });
+}
+
+/** 称号币排行。 */
+export async function getTitleCoinRanking(): Promise<TitleCoinRankEntry[]> {
+  return cached("coin-ranking", async () => {
+    const rows = await query<RowDataPacket[]>(
+      `SELECT player_uuid AS uuid, player_name AS name, amount
+         FROM title_coin
+        ORDER BY amount DESC, name ASC
+        LIMIT 20`,
+    );
+    return rows.map((row, index) => ({
+      rank: index + 1,
+      uuid: row.uuid ? String(row.uuid) : null,
+      name: String(row.name),
+      coins: Number(row.amount ?? 0),
+    }));
+  });
+}
+
+/* ---------- 称号库（分页 + 搜索） ---------- */
+
+export async function getTitleList(
+  keyword: string,
+  page: number,
+): Promise<Paginated<TitleListItem>> {
+  const like = `%${keyword}%`;
+  const offset = (page - 1) * PAGE_SIZE;
+  const where = keyword ? "WHERE tl.title_name LIKE ?" : "";
+  const baseParams = keyword ? [like] : [];
+
+  const rows = await query<RowDataPacket[]>(
+    `SELECT tl.id, tl.title_name AS titleName, tl.buy_type AS buyType,
+            tl.amount, tl.day, tl.is_hide AS isHide,
+            tl.description, tl.position,
+            (SELECT GROUP_CONCAT(buff_type) FROM title_buff tb
+              WHERE tb.title_id = tl.id) AS buffTypes,
+            (SELECT tp.particle_type FROM title_particle tp
+              WHERE tp.title_id = tl.id LIMIT 1) AS particleType
+       FROM title_list tl
+       ${where}
+      ORDER BY tl.position ASC, tl.id ASC
+      LIMIT ? OFFSET ?`,
+    [...baseParams, PAGE_SIZE, offset],
+  );
+  const countRows = await query<RowDataPacket[]>(
+    `SELECT COUNT(*) AS total FROM title_list tl ${where}`,
+    baseParams,
+  );
+
+  return {
+    items: rows.map((row) => ({
+      id: Number(row.id),
+      titleName: String(row.titleName),
+      buyType: row.buyType ? String(row.buyType) : null,
+      amount: row.amount === null || row.amount === undefined ? null : Number(row.amount),
+      day: Number(row.day ?? 0),
+      isHide: Number(row.isHide ?? 0) === 1,
+      description: row.description ? String(row.description) : null,
+      position: Number(row.position ?? 0),
+      particleType: row.particleType ? String(row.particleType) : null,
+      buffTypes: row.buffTypes
+        ? String(row.buffTypes)
+            .split(",")
+            .filter(Boolean)
+        : [],
+    })),
+    total: Number(countRows[0]?.total ?? 0),
+    page,
+    pageSize: PAGE_SIZE,
+  };
+}
+
+/* ---------- 称号玩家列表（搜索 + 服务端分页，批量聚合） ---------- */
+
+export async function getTitlePlayers(
+  keyword: string,
+  page: number,
+): Promise<Paginated<TitlePlayerItem>> {
+  const like = `%${keyword}%`;
+  const offset = (page - 1) * PAGE_SIZE;
+  const where = keyword ? "WHERE u.name LIKE ?" : "";
+  const baseParams = keyword ? [like] : [];
+
+  const rows = await query<RowDataPacket[]>(
+    `SELECT u.uuid,
+            MAX(u.name) AS name,
+            SUM(u.titles) AS titleCount,
+            MAX(u.coins) AS coins,
+            MAX(u.usingTitle) AS usingTitle
+       FROM (
+         SELECT player_uuid AS uuid, MAX(player_name) AS name,
+                COUNT(*) AS titles, NULL AS coins,
+                MAX(CASE WHEN is_use = 1 THEN title_name END) AS usingTitle
+           FROM title_player
+          WHERE player_uuid IS NOT NULL
+          GROUP BY player_uuid
+         UNION ALL
+         SELECT player_uuid, MAX(player_name), 0, MAX(amount), NULL
+           FROM title_coin
+          WHERE player_uuid IS NOT NULL
+          GROUP BY player_uuid
+       ) u
+       ${where}
+      GROUP BY u.uuid
+      ORDER BY titleCount DESC, coins DESC, name ASC
+      LIMIT ? OFFSET ?`,
+    [...baseParams, PAGE_SIZE, offset],
+  );
+  const countRows = await query<RowDataPacket[]>(
+    `SELECT COUNT(*) AS total
+       FROM (
+         SELECT DISTINCT u.uuid, u.name
+           FROM (
+             SELECT player_uuid AS uuid, player_name AS name
+               FROM title_player
+              WHERE player_uuid IS NOT NULL
+             UNION ALL
+             SELECT player_uuid, player_name
+               FROM title_coin
+              WHERE player_uuid IS NOT NULL
+           ) u
+          ${where}
+       ) t`,
+    baseParams,
+  );
+
+  return {
+    items: rows.map((row) => ({
+      uuid: String(row.uuid),
+      name: String(row.name),
+      titleCount: Number(row.titleCount ?? 0),
+      usingTitle: row.usingTitle ? String(row.usingTitle) : null,
+      coins: row.coins === null || row.coins === undefined ? null : Number(row.coins),
+    })),
+    total: Number(countRows[0]?.total ?? 0),
+    page,
+    pageSize: PAGE_SIZE,
+  };
+}
+
+/* ---------- 玩家称号详情 ---------- */
+
+export async function getTitlePlayerDetail(
+  uuid: string,
+): Promise<TitlePlayerDetail | null> {
+  const now = new Date();
+  const soonThreshold = toSqlDateTime(addDays(now, 7));
+  const nowText = toSqlDateTime(now);
+
+  const [titleRows, coinRows] = await Promise.all([
+    query<RowDataPacket[]>(
+      `SELECT title_id AS titleId, title_name AS titleName,
+              expiration_time AS expirationTime,
+              is_use AS isUse, is_use_buff AS isUseBuff,
+              is_use_particle AS isUseParticle
+         FROM title_player
+        WHERE player_uuid = ?
+        ORDER BY is_use DESC, expiration_time ASC, titleName ASC`,
+      [uuid],
+    ),
+    query<RowDataPacket[]>(
+      `SELECT amount FROM title_coin WHERE player_uuid = ? LIMIT 1`,
+      [uuid],
+    ),
+  ]);
+
+  if (titleRows.length === 0 && coinRows.length === 0) {
+    return null;
+  }
+
+  const titles: TitlePlayerTitle[] = titleRows.map((row) => {
+    const expirationTime = formatDateTime(String(row.expirationTime));
+    return {
+      titleId: row.titleId === null ? null : Number(row.titleId),
+      titleName: String(row.titleName),
+      expirationTime,
+      isUse: Number(row.isUse ?? 0) === 1,
+      isUseBuff: Number(row.isUseBuff ?? 0) === 1,
+      isUseParticle: Number(row.isUseParticle ?? 0) === 1,
+      expired: expirationTime < nowText,
+      expiringSoon:
+        expirationTime >= nowText && expirationTime < soonThreshold,
+    };
+  });
+
+  return {
+    uuid,
+    name: await resolveTitlePlayerName(uuid),
+    usingTitle: titles.find((title) => title.isUse)?.titleName ?? null,
+    coins:
+      coinRows[0]?.amount === null || coinRows[0]?.amount === undefined
+        ? null
+        : Number(coinRows[0].amount),
+    titles,
+  };
+}
+
+/** 全服玩家详情用的轻量摘要。 */
+export async function getTitlePlayerSummary(
+  uuid: string,
+): Promise<{
+  usingTitle: string | null;
+  titleCount: number;
+  coins: number | null;
+} | null> {
+  const [rows, coinRows] = await Promise.all([
+    query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS total,
+              MAX(CASE WHEN is_use = 1 THEN title_name END) AS usingTitle
+         FROM title_player
+        WHERE player_uuid = ?`,
+      [uuid],
+    ),
+    query<RowDataPacket[]>(
+      `SELECT amount FROM title_coin WHERE player_uuid = ? LIMIT 1`,
+      [uuid],
+    ),
+  ]);
+  const total = Number(rows[0]?.total ?? 0);
+  if (total === 0 && coinRows.length === 0) {
+    return null;
+  }
+  return {
+    usingTitle: rows[0]?.usingTitle ? String(rows[0].usingTitle) : null,
+    titleCount: total,
+    coins:
+      coinRows[0]?.amount === null || coinRows[0]?.amount === undefined
+        ? null
+        : Number(coinRows[0].amount),
+  };
+}
+
+async function resolveTitlePlayerName(uuid: string): Promise<string> {
+  const rows = await query<RowDataPacket[]>(
+    `SELECT player_name AS name FROM title_player
+      WHERE player_uuid = ? AND player_name IS NOT NULL
+      LIMIT 1`,
+    [uuid],
+  );
+  return rows[0]?.name ? String(rows[0].name) : uuid.slice(0, 8);
+}

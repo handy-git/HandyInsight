@@ -51,6 +51,13 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     ],
     landing: "/companions",
   },
+  {
+    id: "playertitle",
+    name: "PlayerTitle",
+    description: "称号系统",
+    tables: ["title_list", "title_player", "title_coin"],
+    landing: "/title",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

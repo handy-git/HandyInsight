@@ -87,6 +87,16 @@ async function fetchCompanions(): Promise<RowDataPacket[]> {
   );
 }
 
+async function fetchPlayerTitle(): Promise<RowDataPacket[]> {
+  // 称号表没有活跃时间列，只提供来源与名称
+  return query<RowDataPacket[]>(
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name
+       FROM title_player
+      WHERE player_uuid IS NOT NULL
+      GROUP BY player_uuid`,
+  );
+}
+
 /** 构建玩家目录（uuid → 档案；AuthMe 独有玩家以虚拟键挂载）。 */
 export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   if (cache && cache.expiresAt > Date.now()) {
@@ -162,6 +172,27 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["companions"],
+          lastActiveAt: null,
+        });
+      }
+    }
+  }
+
+  if (enabled.has("playertitle")) {
+    for (const row of await fetchPlayerTitle()) {
+      const uuid = String(row.uuid);
+      const name = row.name ? String(row.name) : uuid.slice(0, 8);
+      nameToUuid.set(normalizeName(name), uuid);
+      const existing = byUuid.get(uuid);
+      if (existing) {
+        existing.sources.push("playertitle");
+      } else {
+        byUuid.set(uuid, {
+          key: uuid,
+          uuid,
+          name,
+          registeredAt: null,
+          sources: ["playertitle"],
           lastActiveAt: null,
         });
       }

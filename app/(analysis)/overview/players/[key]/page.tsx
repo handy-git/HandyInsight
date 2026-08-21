@@ -14,6 +14,7 @@ import {
   CalendarCheckIcon,
   ClockIcon,
   LogInIcon,
+  MedalIcon,
   PawPrintIcon,
   ShieldCheckIcon,
   TicketIcon,
@@ -250,7 +251,9 @@ export default function UnifiedPlayerDetailPage({
                           ? "PlayerSignIn"
                           : source === "companions"
                             ? "CompanionsPlus"
-                            : "AuthMe"}
+                            : source === "playertitle"
+                              ? "PlayerTitle"
+                              : "AuthMe"}
                     </Badge>
                   ))}
                 </span>
@@ -606,6 +609,49 @@ export default function UnifiedPlayerDetailPage({
             </CardContent>
           </Card>
         </>
+      )}
+
+      {detail.playertitle && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MedalIcon className="size-4 text-muted-foreground" />
+              称号 · PlayerTitle
+            </CardTitle>
+            <CardDescription>
+              持有 {detail.playertitle.titleCount} 个称号
+              {detail.playertitle.usingTitle
+                ? ` · 佩戴中：${detail.playertitle.usingTitle}`
+                : " · 未佩戴"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-8">
+              <div className="flex flex-col">
+                <span className="text-2xl font-semibold text-foreground">
+                  {detail.playertitle.titleCount}
+                </span>
+                <span className="text-xs text-muted-foreground">持有称号（个）</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-semibold text-foreground">
+                  {detail.playertitle.usingTitle ?? "未佩戴"}
+                </span>
+                <span className="text-xs text-muted-foreground">佩戴中的称号</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-semibold text-foreground">
+                  {detail.playertitle.coins === null
+                    ? "—"
+                    : new Intl.NumberFormat("zh-CN").format(
+                        detail.playertitle.coins,
+                      )}
+                </span>
+                <span className="text-xs text-muted-foreground">称号币</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {detail.companions && (

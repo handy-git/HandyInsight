@@ -12,6 +12,7 @@ import { getAuthmeAccountDetail } from "@/lib/plugins/authme/queries";
 import {
   getCompanionsPlayerDetail,
 } from "@/lib/plugins/companions/queries";
+import { getTitlePlayerSummary } from "@/lib/plugins/playertitle/queries";
 import {
   buildPlayerRegistry,
   type RegistryEntry,
@@ -183,6 +184,7 @@ export async function getUnifiedPlayerDetail(
   let signin: UnifiedPlayerDetail["signin"] = null;
   let authme: UnifiedPlayerDetail["authme"] = null;
   let companions: UnifiedPlayerDetail["companions"] = null;
+  let playertitle: UnifiedPlayerDetail["playertitle"] = null;
   let online = false;
 
   if (uuid && enabled.has("playertime")) {
@@ -268,6 +270,21 @@ export async function getUnifiedPlayerDetail(
     );
   }
 
+  if (uuid && enabled.has("playertitle")) {
+    tasks.push(
+      (async () => {
+        const summary = await getTitlePlayerSummary(uuid);
+        if (summary) {
+          playertitle = {
+            usingTitle: summary.usingTitle,
+            titleCount: summary.titleCount,
+            coins: summary.coins,
+          };
+        }
+      })(),
+    );
+  }
+
   await Promise.all(tasks);
 
   return {
@@ -282,6 +299,7 @@ export async function getUnifiedPlayerDetail(
     signin,
     authme,
     companions,
+    playertitle,
   };
 }
 

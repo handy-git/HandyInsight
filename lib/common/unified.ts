@@ -63,6 +63,14 @@ export interface UnifiedPlayerDetail {
     /** 最高能力等级 */
     maxAbilityLevel: number;
   } | null;
+  playertitle: {
+    /** 佩戴中的称号 */
+    usingTitle: string | null;
+    /** 持有称号数 */
+    titleCount: number;
+    /** 称号币 */
+    coins: number | null;
+  } | null;
 }
 
 export interface TimelineEvent {

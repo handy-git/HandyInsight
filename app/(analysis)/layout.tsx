@@ -7,6 +7,7 @@ import {
   BarChart3Icon,
   CalendarCheckIcon,
   LayoutDashboardIcon,
+  MedalIcon,
   PawPrintIcon,
   SettingsIcon,
   ShieldCheckIcon,
@@ -72,6 +73,14 @@ const PLUGIN_NAV: Record<
     items: [
       { href: "/companions", label: "宠物总览", icon: PawPrintIcon },
       { href: "/companions/players", label: "宠物玩家", icon: UsersIcon },
+    ],
+  },
+  playertitle: {
+    label: "PlayerTitle · 称号",
+    items: [
+      { href: "/title", label: "称号总览", icon: MedalIcon },
+      { href: "/title/list", label: "称号库", icon: MedalIcon },
+      { href: "/title/players", label: "称号玩家", icon: UsersIcon },
     ],
   },
 };

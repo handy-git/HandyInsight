@@ -24,8 +24,18 @@ const MINI_MESSAGE = MiniMessage.miniMessage();
 /** 检测 MiniMessage 标签（如 <red>、</gradient>、<#ff0000>）。 */
 const MINI_TAG_PATTERN = /<\/?[a-zA-Z#][a-zA-Z0-9_:#,.\s%'-]*>/;
 
-/** 检测 legacy 颜色代码（&a / §a）。 */
-const LEGACY_CODE_PATTERN = /[§&][0-9a-fk-orx]/i;
+/** 检测 legacy 颜色代码（&a / §a / &#RRGGBB / &#RGB）。 */
+const LEGACY_CODE_PATTERN = /[§&][0-9a-fk-orx]|&#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/;
+
+/** 短 hex（3 位）扩展为 6 位，每位字符翻倍（对应 Java 端 doubleCharacters）。 */
+function expandShortHex(hex: string): string {
+  return hex.length === 3
+    ? hex
+        .split("")
+        .map((char) => char + char)
+        .join("")
+    : hex;
+}
 
 const LEGACY_COLORS: Record<string, string> = {
   "0": "#000000",
@@ -70,6 +80,30 @@ function parseLegacy(text: string): LegacySegment[] {
   while (index < text.length) {
     const char = text[index];
     const next = text[index + 1];
+
+    // &#RRGGBB / &#RGB 十六进制颜色（PlayerTitle 的 RPG 格式）
+    if (char === "&" && next === "#") {
+      const hexMatch = /^&#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/.exec(
+        text.slice(index),
+      );
+      if (hexMatch) {
+        const hex = expandShortHex(hexMatch[1]);
+        if (current.text) {
+          segments.push(current);
+        }
+        current = {
+          text: "",
+          color: `#${hex.toLowerCase()}`,
+          bold: false,
+          italic: false,
+          underlined: false,
+          strikethrough: false,
+        };
+        index += hexMatch[0].length;
+        continue;
+      }
+    }
+
     if (
       (char === "§" || char === "&") &&
       next !== undefined &&

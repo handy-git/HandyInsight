@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   BlocksIcon,
   CheckCircle2Icon,
@@ -38,6 +44,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -115,9 +122,7 @@ export function SettingsDialog({
     { id: string; name: string; description: string }[] | null
   >(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverride, setDragOverride] = useState<
-    { id: string; name: string; description: string }[] | null
-  >(null);
+  const pluginListRef = useRef<HTMLDivElement>(null);
 
   // 设置弹窗打开时加载已启用插件列表
   useEffect(() => {
@@ -153,26 +158,45 @@ export function SettingsDialog({
       )
       .map((entry) => entry.plugin);
   }, [enabledPlugins, prefs.order]);
-  const pluginOrder = dragOverride ?? sortedPlugins;
+  const pluginOrder = sortedPlugins;
 
   function persistOrder(list: { id: string }[], hidden: string[]) {
     const next: PluginPrefs = { order: list.map((plugin) => plugin.id), hidden };
     setPluginPrefs(next);
   }
 
-  function handlePluginDragOver(index: number) {
-    if (dragIndex === null || dragIndex === index) return;
-    const next = [...pluginOrder];
-    const [moved] = next.splice(dragIndex, 1);
-    next.splice(index, 0, moved);
-    setDragOverride(next);
+  /**
+   * 指针拖拽：pointer capture 把所有事件锁定在手柄上，
+   * 不使用原生 HTML5 拖拽（避免拖拽幽灵图带出外层元素）。
+   */
+  function handlePointerDown(event: React.PointerEvent, index: number) {
+    if (event.button !== 0) return;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     setDragIndex(index);
   }
 
-  function handlePluginDragEnd() {
-    persistOrder(pluginOrder, prefs.hidden);
+  function handlePointerMove(event: React.PointerEvent) {
+    if (dragIndex === null) return;
+    const container = pluginListRef.current;
+    const firstRow = container?.firstElementChild as HTMLElement | null;
+    if (!container || !firstRow) return;
+    const rect = container.getBoundingClientRect();
+    const rowHeight = firstRow.offsetHeight + 8; // 行高 + gap-2
+    const relativeY = event.clientY - rect.top + firstRow.offsetHeight / 2;
+    const target = Math.max(
+      0,
+      Math.min(pluginOrder.length - 1, Math.floor(relativeY / rowHeight)),
+    );
+    if (target === dragIndex) return;
+    const next = [...pluginOrder];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(target, 0, moved);
+    setDragIndex(target);
+    persistOrder(next, prefs.hidden);
+  }
+
+  function handlePointerUp() {
     setDragIndex(null);
-    setDragOverride(null);
   }
 
   function togglePluginShown(id: string, shown: boolean) {
@@ -404,12 +428,15 @@ export function SettingsDialog({
       ) : (
         <DialogContent
           showCloseButton={showCloseButton}
-          className="gap-0 overflow-hidden border p-0 shadow-xl sm:max-w-2xl"
+          className="gap-0 overflow-hidden border p-0 shadow-xl sm:max-w-3xl"
         >
           <DialogTitle className="sr-only">设置</DialogTitle>
           <Tabs orientation="vertical" defaultValue="database" className="contents">
             <div className="grid min-h-[420px] grid-cols-1 sm:grid-cols-[168px_1fr]">
-              <nav className="border-b bg-muted/40 p-3 sm:border-r sm:border-b-0">
+              <nav className="flex flex-col gap-1 border-b bg-muted/40 p-3 sm:border-r sm:border-b-0">
+                <p className="hidden px-2 pb-1 text-xs font-medium text-muted-foreground sm:block">
+                  设置
+                </p>
                 <TabsList variant="line" className="w-full">
                   <TabsTrigger value="database">
                     <DatabaseIcon data-icon="inline-start" />
@@ -463,21 +490,22 @@ export function SettingsDialog({
                       选择界面主题；跟随系统时自动切换深浅色。
                     </FieldDescription>
                     <ToggleGroup
+                      className="w-full"
                       value={[theme]}
                       onValueChange={(values) => {
                         const next = values[0] as ThemeMode | undefined;
                         if (next) setThemeMode(next);
                       }}
                     >
-                      <ToggleGroupItem value="system">
+                      <ToggleGroupItem value="system" className="flex-1 justify-center">
                         <MonitorIcon data-icon="inline-start" />
                         跟随系统
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="light">
+                      <ToggleGroupItem value="light" className="flex-1 justify-center">
                         <SunIcon data-icon="inline-start" />
                         浅色
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="dark">
+                      <ToggleGroupItem value="dark" className="flex-1 justify-center">
                         <MoonIcon data-icon="inline-start" />
                         深色
                       </ToggleGroupItem>
@@ -498,10 +526,7 @@ export function SettingsDialog({
                   {enabledPlugins === null ? (
                     <div className="flex flex-col gap-2">
                       {Array.from({ length: 3 }).map((_, index) => (
-                        <div
-                          key={index}
-                          className="h-14 rounded-md border bg-muted/40"
-                        />
+                        <Skeleton key={index} className="h-14 w-full" />
                       ))}
                     </div>
                   ) : pluginOrder.length === 0 ? (
@@ -509,22 +534,38 @@ export function SettingsDialog({
                       当前没有已启用的插件。
                     </p>
                   ) : (
-                    <div className="flex flex-col gap-2">
+                    <div
+                      ref={pluginListRef}
+                      className="flex select-none flex-col gap-2"
+                    >
                       {pluginOrder.map((plugin, index) => {
                         const shown = !prefs.hidden.includes(plugin.id);
+                        const dragging = dragIndex === index;
                         return (
                           <div
                             key={plugin.id}
-                            draggable
-                            onDragStart={() => setDragIndex(index)}
-                            onDragOver={(event) => {
-                              event.preventDefault();
-                              handlePluginDragOver(index);
-                            }}
-                            onDragEnd={handlePluginDragEnd}
-                            className="flex items-center gap-3 rounded-md border px-3 py-2 transition-colors"
+                            className={
+                              "flex items-center gap-3 rounded-lg border px-3 py-2 transition-all " +
+                              (dragging
+                                ? "opacity-50 ring-2 ring-primary/40"
+                                : "hover:bg-muted/40")
+                            }
                           >
-                            <GripVerticalIcon className="cursor-grab text-muted-foreground" />
+                            <span
+                              onPointerDown={(event) =>
+                                handlePointerDown(event, index)
+                              }
+                              onPointerMove={handlePointerMove}
+                              onPointerUp={handlePointerUp}
+                              onPointerCancel={handlePointerUp}
+                              className={
+                                "flex size-7 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground " +
+                                (dragging ? "cursor-grabbing" : "")
+                              }
+                              aria-label={`拖动调整 ${plugin.name} 顺序`}
+                            >
+                              <GripVerticalIcon className="size-4" />
+                            </span>
                             <div className="flex flex-1 flex-col">
                               <span className="text-sm font-medium">
                                 {plugin.name}

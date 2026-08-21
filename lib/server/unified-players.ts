@@ -72,6 +72,7 @@ export async function getUnifiedPlayers(
   const signinCounts = new Map<string, number>();
   const companionCounts = new Map<string, number>();
   const companionCoins = new Map<string, number>();
+  const titleCoins = new Map<string, number>();
 
   if (enabled.has("playertime")) {
     const onlineRows = await query<RowDataPacket[]>(
@@ -116,6 +117,17 @@ export async function getUnifiedPlayers(
     }
   }
 
+  if (enabled.has("playertitle")) {
+    const coinRows = await query<RowDataPacket[]>(
+      `SELECT player_uuid AS uuid, amount FROM title_coin`,
+    );
+    for (const row of coinRows) {
+      if (row.uuid !== null && row.amount !== null && row.amount !== undefined) {
+        titleCoins.set(String(row.uuid), Number(row.amount));
+      }
+    }
+  }
+
   const nameToUuid = new Map<string, string>();
   for (const entry of registry) {
     if (entry.uuid) {
@@ -137,6 +149,7 @@ export async function getUnifiedPlayers(
       totalSigns: uuid ? (signinCounts.get(uuid) ?? 0) : 0,
       companionCount: uuid ? (companionCounts.get(uuid) ?? 0) : 0,
       companionCoins: uuid ? (companionCoins.get(uuid) ?? null) : null,
+      titleCoins: uuid ? (titleCoins.get(uuid) ?? null) : null,
     };
   });
 

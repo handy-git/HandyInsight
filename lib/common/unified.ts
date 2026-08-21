@@ -16,6 +16,8 @@ export interface UnifiedPlayerItem {
   companionCount: number;
   /** 宠物货币（CompanionsPlus） */
   companionCoins: number | null;
+  /** 称号币（PlayerTitle） */
+  titleCoins: number | null;
 }
 
 export interface UnifiedPlayerDetail {

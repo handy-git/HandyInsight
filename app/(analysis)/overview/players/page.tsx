@@ -178,6 +178,7 @@ export default function UnifiedPlayersPage() {
                   <TableHead className="text-right">签到</TableHead>
                   <TableHead className="text-right">宠物</TableHead>
                   <TableHead className="text-right">宠物币</TableHead>
+                  <TableHead className="text-right">称号币</TableHead>
                   <TableHead className="text-right">最近活跃</TableHead>
                 </TableRow>
               </TableHeader>
@@ -219,6 +220,11 @@ export default function UnifiedPlayersPage() {
                       {player.companionCoins === null
                         ? "—"
                         : new Intl.NumberFormat("zh-CN").format(player.companionCoins)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {player.titleCoins === null
+                        ? "—"
+                        : new Intl.NumberFormat("zh-CN").format(player.titleCoins)}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {relativeTime(player.lastActiveAt)}

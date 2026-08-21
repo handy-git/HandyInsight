@@ -248,6 +248,45 @@ export default function UnifiedPlayerDetailPage({
               </span>
             </span>
           </CardTitle>
+          {(detail.playertitle || detail.companions || detail.authme) && (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+              {detail.playertitle && (
+                <span className="flex items-center gap-1.5">
+                  <MedalIcon className="size-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">称号</span>
+                  {detail.playertitle.usingTitle ? (
+                    <McText text={detail.playertitle.usingTitle} />
+                  ) : (
+                    <span>{detail.playertitle.titleCount} 个</span>
+                  )}
+                </span>
+              )}
+              {detail.companions && (
+                <span className="flex items-center gap-1.5">
+                  <PawPrintIcon className="size-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">宠物</span>
+                  <span>{detail.companions.totalCompanions} 只</span>
+                  {detail.companions.activeCompanion && (
+                    <span className="text-muted-foreground">
+                      · 出战 {detail.companions.activeCompanion}
+                    </span>
+                  )}
+                </span>
+              )}
+              {detail.authme && (
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheckIcon className="size-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">账户</span>
+                  <span>{detail.authme.ip ?? detail.authme.regIp ?? "—"}</span>
+                  {detail.authme.lastLoginAt && (
+                    <span className="text-muted-foreground">
+                      · {formatDateTime(detail.authme.lastLoginAt)} 登录
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
         </CardHeader>
       </Card>
 
@@ -372,7 +411,7 @@ export default function UnifiedPlayerDetailPage({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {detail.playtime && (
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClockIcon className="size-4 text-muted-foreground" />
@@ -384,12 +423,21 @@ export default function UnifiedPlayerDetailPage({
               {formatSeconds(detail.playtime.monthSeconds)}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-44 w-full">
-              <AreaChart data={chartData}>
+          <CardContent className="flex flex-1 flex-col">
+            <ChartContainer
+              config={chartConfig}
+              className="min-h-48 w-full flex-1"
+            >
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                 <CartesianGrid vertical={false} />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  minTickGap={24}
+                />
+                <YAxis tickLine={false} axisLine={false} width={32} tickMargin={8} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area
                   type="monotone"
@@ -397,6 +445,8 @@ export default function UnifiedPlayerDetailPage({
                   stroke="var(--color-hours)"
                   fill="var(--color-hours)"
                   fillOpacity={0.2}
+                  dot={false}
+                  activeDot={{ r: 3 }}
                 />
               </AreaChart>
             </ChartContainer>
@@ -662,156 +712,6 @@ export default function UnifiedPlayerDetailPage({
           </Card>
         )}
         </>
-      )}
-      {detail.playertitle && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MedalIcon className="size-4 text-muted-foreground" />
-              称号 · PlayerTitle
-            </CardTitle>
-            <CardDescription>
-              持有 {detail.playertitle.titleCount} 个称号 ·{" "}
-              {detail.playertitle.usingTitle ? "佩戴中：" : "未佩戴"}
-              {detail.playertitle.usingTitle && (
-                <McText text={detail.playertitle.usingTitle} />
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-8">
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold text-foreground">
-                  {detail.playertitle.titleCount}
-                </span>
-                <span className="text-xs text-muted-foreground">持有称号（个）</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold text-foreground">
-                  {detail.playertitle.usingTitle ? (
-                    <McText text={detail.playertitle.usingTitle} />
-                  ) : (
-                    "未佩戴"
-                  )}
-                </span>
-                <span className="text-xs text-muted-foreground">佩戴中的称号</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold text-foreground">
-                  {detail.playertitle.coins === null
-                    ? "—"
-                    : new Intl.NumberFormat("zh-CN").format(
-                        detail.playertitle.coins,
-                      )}
-                </span>
-                <span className="text-xs text-muted-foreground">称号币</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {detail.companions && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PawPrintIcon className="size-4 text-muted-foreground" />
-              宠物 · CompanionsPlus
-            </CardTitle>
-            <CardDescription>
-              拥有 {detail.companions.totalCompanions} 只宠物 · 最高 Lv.
-              {detail.companions.maxAbilityLevel}
-              {detail.companions.activeCompanion
-                ? ` · 出战中：${detail.companions.activeCompanion}`
-                : ""}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-8">
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold text-foreground">
-                  {detail.companions.coins === null
-                    ? "—"
-                    : new Intl.NumberFormat("zh-CN").format(
-                        detail.companions.coins,
-                      )}
-                </span>
-                <span className="text-xs text-muted-foreground">宠物货币</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold text-foreground">
-                  {detail.companions.totalCompanions}
-                </span>
-                <span className="text-xs text-muted-foreground">拥有宠物（只）</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold text-foreground">
-                  Lv.{detail.companions.maxAbilityLevel}
-                </span>
-                <span className="text-xs text-muted-foreground">最高能力等级</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold text-foreground">
-                  {detail.companions.activeCompanion ?? "未出战"}
-                </span>
-                <span className="text-xs text-muted-foreground">出战宠物</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {detail.authme && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheckIcon className="size-4 text-muted-foreground" />
-              账户 · AuthMe
-            </CardTitle>
-            <CardDescription>
-              认证账户信息（不展示密码与两步验证）
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-40">项目</TableHead>
-                  <TableHead>内容</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[
-                  { label: "登录名", value: detail.authme.username },
-                  { label: "邮箱", value: detail.authme.email ?? "—" },
-                  { label: "注册 IP", value: detail.authme.regIp ?? "—" },
-                  { label: "最近登录 IP", value: detail.authme.ip ?? "—" },
-                  {
-                    label: "最近登录",
-                    value: detail.authme.lastLoginAt ?? "从未登录",
-                  },
-                  {
-                    label: "最后位置",
-                    value: `${detail.authme.world}（${Math.round(
-                      detail.authme.x,
-                    )}, ${Math.round(detail.authme.y)}, ${Math.round(
-                      detail.authme.z,
-                    )}）`,
-                  },
-                ].map((row) => (
-                  <TableRow key={row.label}>
-                    <TableCell className="text-muted-foreground">
-                      {row.label}
-                    </TableCell>
-                    <TableCell className="font-medium break-all">
-                      {row.value}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       )}
     </>
   );

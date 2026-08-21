@@ -467,7 +467,7 @@ export default function UnifiedPlayerDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+            <div className="mx-auto grid w-full max-w-xs grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
               {WEEKDAYS.map((weekday) => (
                 <div key={weekday} className="py-1">
                   {weekday}

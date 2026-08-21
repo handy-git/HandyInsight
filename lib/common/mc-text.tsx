@@ -210,12 +210,18 @@ function componentStyle(style: Style): React.CSSProperties {
   return css;
 }
 
-/** 递归渲染 MiniMessage 组件树（样式已在反序列化时解析到各节点）。 */
+/**
+ * 递归渲染 MiniMessage 组件树（样式已在反序列化时解析到各节点）。
+ * sprite/selector 等游戏端专属组件（object 类型）在网页中无对应展示，跳过。
+ */
 function renderComponent(
   component: Component,
   parentCss: React.CSSProperties,
   keyPrefix: string,
 ): ReactNode {
+  if (component.type === "object") {
+    return null;
+  }
   const css = { ...parentCss, ...componentStyle(component.style()) };
   const children = component.children();
   const content =
@@ -242,43 +248,132 @@ function renderComponent(
   return nodes.length === 1 ? nodes[0] : <>{nodes}</>;
 }
 
-/** 渲染可能包含 Minecraft 颜色代码（MiniMessage 或 &/§ legacy）的文本。 */
+/**
+ * 按顶层 legacy 码（&a/§a/&#hex）把混合文本切段。
+ * 只在 MiniMessage 标签之外的码处切分（legacy 码语义为重置再设样式，段间样式独立）。
+ */
+function splitByTopLevelLegacy(text: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let tagDepth = 0;
+  let index = 0;
+  while (index < text.length) {
+    const char = text[index];
+    const next = text[index + 1];
+    const atTagLevel = tagDepth === 0;
+    const isLegacyCode =
+      (atTagLevel &&
+        (char === "§" || char === "&") &&
+        next !== undefined &&
+        /[0-9a-fk-orx]/i.test(next)) ||
+      (atTagLevel &&
+        char === "&" &&
+        /^&#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/.test(text.slice(index)));
+    if (isLegacyCode && index > 0) {
+      parts.push(current);
+      current = "";
+    }
+    if (char === "<") {
+      tagDepth += 1;
+    } else if (char === ">" && tagDepth > 0) {
+      tagDepth -= 1;
+    }
+    current += char;
+    index += 1;
+  }
+  parts.push(current);
+  return parts;
+}
+
+/** 剥离段首连续的 legacy 码（&a/§a/&#hex），返回 { prefix, rest }。 */
+function stripLeadingLegacyCodes(segment: string): { prefix: string; rest: string } {
+  const match = /^((?:[§&][0-9a-fk-orx]|&#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3}))*)/.exec(
+    segment,
+  );
+  const prefix = match ? match[1] : "";
+  return { prefix, rest: segment.slice(prefix.length) };
+}
+
+/** 由 legacy 码前缀推导基础样式（取最后一个颜色码 + 装饰码叠加）。 */
+function legacyPrefixStyle(prefix: string): React.CSSProperties {
+  const segments = parseLegacy(`${prefix}x`);
+  const segment = segments[segments.length - 1];
+  return segment ? legacyStyle({ ...segment, text: "" }) : {};
+}
+
+/** 渲染单个片段：剥离段首 legacy 码作为基础样式，剩余按 MiniMessage / legacy / 纯文本渲染。 */
+function renderSegment(segment: string, key: number): ReactNode {
+  const { prefix, rest } = stripLeadingLegacyCodes(segment);
+
+  if (MINI_TAG_PATTERN.test(rest)) {
+    let component: Component | null = null;
+    try {
+      component = MINI_MESSAGE.deserialize(rest);
+    } catch {
+      component = null;
+    }
+    if (component) {
+      const baseStyle = legacyPrefixStyle(prefix);
+      const rendered = renderComponent(component, baseStyle, `mini-${key}`);
+      if (rendered !== null) {
+        return rendered;
+      }
+    }
+    return <span key={`raw-${key}`}>{segment}</span>;
+  }
+
+  if (LEGACY_CODE_PATTERN.test(segment)) {
+    const segments = parseLegacy(segment);
+    if (segments.length === 1) {
+      return (
+        <span key={`legacy-${key}`} style={legacyStyle(segments[0])}>
+          {segments[0].text}
+        </span>
+      );
+    }
+    return (
+      <span key={`legacy-${key}`}>
+        {segments.map((legacySegment, index) => (
+          <span key={index} style={legacyStyle(legacySegment)}>
+            {legacySegment.text}
+          </span>
+        ))}
+      </span>
+    );
+  }
+
+  if (prefix) {
+    const style = legacyPrefixStyle(prefix);
+    return (
+      <span key={`plain-${key}`} style={style}>
+        {rest}
+      </span>
+    );
+  }
+
+  return <span key={`plain-${key}`}>{segment}</span>;
+}
+
+/** 渲染可能包含 Minecraft 颜色代码（MiniMessage、&/§ legacy、&#hex 及其混合）的文本。 */
 export function McText({ text }: { text: string }) {
   if (!text) {
     return null;
   }
 
-  if (MINI_TAG_PATTERN.test(text)) {
-    let component: Component | null = null;
-    try {
-      component = MINI_MESSAGE.deserialize(text);
-    } catch {
-      component = null;
-    }
-    if (component) {
-      const rendered = renderComponent(component, {}, "root");
-      if (rendered !== null) {
-        return <>{rendered}</>;
+  // 混合格式（legacy 码与 MiniMessage 标签共存）：按顶层 legacy 码分段后逐段渲染
+  const hasMiniTag = MINI_TAG_PATTERN.test(text);
+  if (hasMiniTag) {
+    const withoutHexCodes = text.replace(
+      /&#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/g,
+      "",
+    );
+    if (/[§&][^<]*</.test(withoutHexCodes)) {
+      const parts = splitByTopLevelLegacy(text);
+      if (parts.length > 1) {
+        return <>{parts.map((part, index) => renderSegment(part, index))}</>;
       }
     }
-    return <>{text}</>;
   }
 
-  if (LEGACY_CODE_PATTERN.test(text)) {
-    const segments = parseLegacy(text);
-    if (segments.length === 1) {
-      return <span style={legacyStyle(segments[0])}>{segments[0].text}</span>;
-    }
-    return (
-      <>
-        {segments.map((segment, index) => (
-          <span key={index} style={legacyStyle(segment)}>
-            {segment.text}
-          </span>
-        ))}
-      </>
-    );
-  }
-
-  return <>{text}</>;
+  return <>{renderSegment(text, 0)}</>;
 }

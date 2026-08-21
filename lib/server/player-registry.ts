@@ -78,6 +78,15 @@ async function fetchAuthme(): Promise<RowDataPacket[]> {
   );
 }
 
+async function fetchCompanions(): Promise<RowDataPacket[]> {
+  // 宠物表没有时间列，不参与最近活跃计算，只提供来源与名称
+  return query<RowDataPacket[]>(
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name
+       FROM companions_owned
+      GROUP BY player_uuid`,
+  );
+}
+
 /** 构建玩家目录（uuid → 档案；AuthMe 独有玩家以虚拟键挂载）。 */
 export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   if (cache && cache.expiresAt > Date.now()) {
@@ -86,7 +95,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   const plugins = await getEnabledPlugins();
   const enabled = new Set(plugins.map((plugin) => plugin.id));
 
-  // name → uuid 桥接表（来自有 UUID 的两个插件）
+  // name → uuid 桥接表（来自有 UUID 的各插件）
   const nameToUuid = new Map<string, string>();
   const byUuid = new Map<string, RegistryEntry>();
 
@@ -133,6 +142,27 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           lastActiveAt: row.lastActiveAt
             ? formatDateTime(String(row.lastActiveAt))
             : null,
+        });
+      }
+    }
+  }
+
+  if (enabled.has("companions")) {
+    for (const row of await fetchCompanions()) {
+      const uuid = String(row.uuid);
+      const name = row.name ? String(row.name) : uuid.slice(0, 8);
+      nameToUuid.set(normalizeName(name), uuid);
+      const existing = byUuid.get(uuid);
+      if (existing) {
+        existing.sources.push("companions");
+      } else {
+        byUuid.set(uuid, {
+          key: uuid,
+          uuid,
+          name,
+          registeredAt: null,
+          sources: ["companions"],
+          lastActiveAt: null,
         });
       }
     }

@@ -39,6 +39,18 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     tables: ["authme"],
     landing: "/authme",
   },
+  {
+    id: "companions",
+    name: "CompanionsPlus",
+    description: "宠物系统",
+    tables: [
+      "companions_active",
+      "companions_coin",
+      "companions_equipment",
+      "companions_owned",
+    ],
+    landing: "/companions",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

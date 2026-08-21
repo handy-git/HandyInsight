@@ -14,6 +14,7 @@ import {
   CalendarCheckIcon,
   ClockIcon,
   LogInIcon,
+  PawPrintIcon,
   ShieldCheckIcon,
   TicketIcon,
 } from "lucide-react";
@@ -247,7 +248,9 @@ export default function UnifiedPlayerDetailPage({
                         ? "PlayerTime"
                         : source === "playersignin"
                           ? "PlayerSignIn"
-                          : "AuthMe"}
+                          : source === "companions"
+                            ? "CompanionsPlus"
+                            : "AuthMe"}
                     </Badge>
                   ))}
                 </span>
@@ -603,6 +606,56 @@ export default function UnifiedPlayerDetailPage({
             </CardContent>
           </Card>
         </>
+      )}
+
+      {detail.companions && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PawPrintIcon className="size-4 text-muted-foreground" />
+              宠物 · CompanionsPlus
+            </CardTitle>
+            <CardDescription>
+              拥有 {detail.companions.totalCompanions} 只宠物 · 最高 Lv.
+              {detail.companions.maxAbilityLevel}
+              {detail.companions.activeCompanion
+                ? ` · 出战中：${detail.companions.activeCompanion}`
+                : ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-8">
+              <div className="flex flex-col">
+                <span className="text-2xl font-semibold text-foreground">
+                  {detail.companions.coins === null
+                    ? "—"
+                    : new Intl.NumberFormat("zh-CN").format(
+                        detail.companions.coins,
+                      )}
+                </span>
+                <span className="text-xs text-muted-foreground">宠物货币</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-semibold text-foreground">
+                  {detail.companions.totalCompanions}
+                </span>
+                <span className="text-xs text-muted-foreground">拥有宠物（只）</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-semibold text-foreground">
+                  Lv.{detail.companions.maxAbilityLevel}
+                </span>
+                <span className="text-xs text-muted-foreground">最高能力等级</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-semibold text-foreground">
+                  {detail.companions.activeCompanion ?? "未出战"}
+                </span>
+                <span className="text-xs text-muted-foreground">出战宠物</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {detail.authme && (

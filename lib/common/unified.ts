@@ -49,6 +49,16 @@ export interface UnifiedPlayerDetail {
     y: number;
     z: number;
   } | null;
+  companions: {
+    /** 拥有宠物数 */
+    totalCompanions: number;
+    /** 宠物货币 */
+    coins: number | null;
+    /** 出战宠物 */
+    activeCompanion: string | null;
+    /** 最高能力等级 */
+    maxAbilityLevel: number;
+  } | null;
 }
 
 export interface TimelineEvent {

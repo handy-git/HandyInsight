@@ -7,6 +7,7 @@ import {
   BarChart3Icon,
   CalendarCheckIcon,
   LayoutDashboardIcon,
+  PawPrintIcon,
   SettingsIcon,
   ShieldCheckIcon,
   UsersIcon,
@@ -64,6 +65,13 @@ const PLUGIN_NAV: Record<
     items: [
       { href: "/authme", label: "账户总览", icon: ShieldCheckIcon },
       { href: "/authme/players", label: "账户列表", icon: UsersIcon },
+    ],
+  },
+  companions: {
+    label: "CompanionsPlus · 宠物",
+    items: [
+      { href: "/companions", label: "宠物总览", icon: PawPrintIcon },
+      { href: "/companions/players", label: "宠物玩家", icon: UsersIcon },
     ],
   },
 };

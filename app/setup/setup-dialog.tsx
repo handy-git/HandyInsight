@@ -3,10 +3,26 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   BlocksIcon,
   CheckCircle2Icon,
@@ -121,8 +137,12 @@ export function SettingsDialog({
   const [enabledPlugins, setEnabledPlugins] = useState<
     { id: string; name: string; description: string }[] | null
   >(null);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const pluginListRef = useRef<HTMLDivElement>(null);
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   // 设置弹窗打开时加载已启用插件列表
   useEffect(() => {
@@ -165,38 +185,16 @@ export function SettingsDialog({
     setPluginPrefs(next);
   }
 
-  /**
-   * 指针拖拽：pointer capture 把所有事件锁定在手柄上，
-   * 不使用原生 HTML5 拖拽（避免拖拽幽灵图带出外层元素）。
-   */
-  function handlePointerDown(event: React.PointerEvent, index: number) {
-    if (event.button !== 0) return;
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    setDragIndex(index);
-  }
-
-  function handlePointerMove(event: React.PointerEvent) {
-    if (dragIndex === null) return;
-    const container = pluginListRef.current;
-    const firstRow = container?.firstElementChild as HTMLElement | null;
-    if (!container || !firstRow) return;
-    const rect = container.getBoundingClientRect();
-    const rowHeight = firstRow.offsetHeight + 8; // 行高 + gap-2
-    const relativeY = event.clientY - rect.top + firstRow.offsetHeight / 2;
-    const target = Math.max(
-      0,
-      Math.min(pluginOrder.length - 1, Math.floor(relativeY / rowHeight)),
+  /** 拖拽结束：落点换位并持久化（拖动过程中 dnd-kit 负责动画预览）。 */
+  function handlePluginDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = pluginOrder.findIndex(
+      (plugin) => plugin.id === active.id,
     );
-    if (target === dragIndex) return;
-    const next = [...pluginOrder];
-    const [moved] = next.splice(dragIndex, 1);
-    next.splice(target, 0, moved);
-    setDragIndex(target);
-    persistOrder(next, prefs.hidden);
-  }
-
-  function handlePointerUp() {
-    setDragIndex(null);
+    const newIndex = pluginOrder.findIndex((plugin) => plugin.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    persistOrder(arrayMove(pluginOrder, oldIndex, newIndex), prefs.hidden);
   }
 
   function togglePluginShown(id: string, shown: boolean) {
@@ -534,57 +532,29 @@ export function SettingsDialog({
                       当前没有已启用的插件。
                     </p>
                   ) : (
-                    <div
-                      ref={pluginListRef}
-                      className="flex select-none flex-col gap-2"
+                    <DndContext
+                      sensors={dragSensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handlePluginDragEnd}
                     >
-                      {pluginOrder.map((plugin, index) => {
-                        const shown = !prefs.hidden.includes(plugin.id);
-                        const dragging = dragIndex === index;
-                        return (
-                          <div
-                            key={plugin.id}
-                            className={
-                              "flex items-center gap-3 rounded-lg border px-3 py-2 transition-all " +
-                              (dragging
-                                ? "opacity-50 ring-2 ring-primary/40"
-                                : "hover:bg-muted/40")
-                            }
-                          >
-                            <span
-                              onPointerDown={(event) =>
-                                handlePointerDown(event, index)
-                              }
-                              onPointerMove={handlePointerMove}
-                              onPointerUp={handlePointerUp}
-                              onPointerCancel={handlePointerUp}
-                              className={
-                                "flex size-7 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground " +
-                                (dragging ? "cursor-grabbing" : "")
-                              }
-                              aria-label={`拖动调整 ${plugin.name} 顺序`}
-                            >
-                              <GripVerticalIcon className="size-4" />
-                            </span>
-                            <div className="flex flex-1 flex-col">
-                              <span className="text-sm font-medium">
-                                {plugin.name}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {plugin.description}
-                              </span>
-                            </div>
-                            <Switch
-                              checked={shown}
-                              onCheckedChange={(checked) =>
+                      <SortableContext
+                        items={pluginOrder.map((plugin) => plugin.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="flex select-none flex-col gap-2">
+                          {pluginOrder.map((plugin) => (
+                            <SortablePluginRow
+                              key={plugin.id}
+                              plugin={plugin}
+                              shown={!prefs.hidden.includes(plugin.id)}
+                              onToggle={(checked) =>
                                 togglePluginShown(plugin.id, checked)
                               }
-                              aria-label={`显示 ${plugin.name}`}
                             />
-                          </div>
-                        );
-                      })}
-                    </div>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   )}
                   <p className="text-xs text-muted-foreground">
                     开关只控制侧边栏显示，不影响数据采集与接口。
@@ -596,5 +566,69 @@ export function SettingsDialog({
         </DialogContent>
       )}
     </Dialog>
+  );
+}
+
+interface SortablePlugin {
+  id: string;
+  name: string;
+  description: string;
+}
+
+/** 可拖拽排序的插件行：仅抓手可发起拖动，其余行带位移动画。 */
+function SortablePluginRow({
+  plugin,
+  shown,
+  onToggle,
+}: {
+  plugin: SortablePlugin;
+  shown: boolean;
+  onToggle: (checked: boolean) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: plugin.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : undefined,
+      }}
+      className={
+        "flex items-center gap-3 rounded-lg border bg-popover px-3 py-2 transition-colors " +
+        (isDragging
+          ? "opacity-70 shadow-lg ring-2 ring-primary/40"
+          : "hover:bg-muted/40")
+      }
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={`拖动调整 ${plugin.name} 顺序`}
+        className="flex size-7 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring active:cursor-grabbing"
+      >
+        <GripVerticalIcon className="size-4" />
+      </button>
+      <div className="flex flex-1 flex-col">
+        <span className="text-sm font-medium">{plugin.name}</span>
+        <span className="text-xs text-muted-foreground">
+          {plugin.description}
+        </span>
+      </div>
+      <Switch
+        checked={shown}
+        onCheckedChange={onToggle}
+        aria-label={`显示 ${plugin.name}`}
+      />
+    </div>
   );
 }

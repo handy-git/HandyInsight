@@ -46,7 +46,7 @@ import {
   setThemeMode,
   subscribeTheme,
   type ThemeMode,
-} from "@/lib/theme";
+} from "@/lib/common/theme";
 
 interface FormState {
   host: string;
@@ -69,7 +69,7 @@ const INITIAL_FORM: FormState = {
 type TestState =
   | { status: "idle" }
   | { status: "testing" }
-  | { status: "success" }
+  | { status: "success"; plugins: string[] }
   | { status: "error"; message: string };
 
 interface SettingsDialogProps {
@@ -113,9 +113,16 @@ export function SettingsDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, port: Number(form.port) }),
       });
-      const data = (await response.json()) as { ok: boolean; message?: string };
+      const data = (await response.json()) as {
+        ok: boolean;
+        message?: string;
+        plugins?: { id: string; name: string }[];
+      };
       if (data.ok) {
-        setTest({ status: "success" });
+        setTest({
+          status: "success",
+          plugins: (data.plugins ?? []).map((plugin) => plugin.name),
+        });
       } else {
         setTest({ status: "error", message: data.message ?? "连接失败" });
       }
@@ -241,7 +248,9 @@ export function SettingsDialog({
           <CheckCircle2Icon />
           <AlertTitle>连接成功</AlertTitle>
           <AlertDescription>
-            已确认数据库中存在 PlayerTime 数据表，可以保存配置。
+            {test.plugins.length > 0
+              ? `已检测到插件：${test.plugins.join("、")}；保存后即可启用对应分析功能。`
+              : "连接正常，可以保存配置。"}
           </AlertDescription>
         </Alert>
       )}

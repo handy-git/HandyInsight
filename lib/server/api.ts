@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import {
   friendlyMysqlError,
   MysqlNotConfiguredError,
+  PluginUnavailableError,
 } from "@/lib/server/mysql";
 
 /** 统一错误响应：不返回 SQL、密码、数据库地址或服务端路径。 */
@@ -12,6 +13,12 @@ export function apiError(error: unknown): NextResponse {
     return NextResponse.json(
       { ok: false, message: "MySQL 尚未配置，请先完成连接配置" },
       { status: 409 },
+    );
+  }
+  if (error instanceof PluginUnavailableError) {
+    return NextResponse.json(
+      { ok: false, message: "数据库中未检测到该插件的数据表，此功能未启用" },
+      { status: 404 },
     );
   }
   if (error instanceof ZodError) {

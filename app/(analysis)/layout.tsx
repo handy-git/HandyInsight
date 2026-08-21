@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3Icon, SettingsIcon, UsersIcon } from "lucide-react";
+import {
+  BarChart3Icon,
+  CalendarCheckIcon,
+  SettingsIcon,
+  UsersIcon,
+} from "lucide-react";
 
 import { SettingsDialog } from "@/app/setup/setup-dialog";
-
 import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
@@ -24,10 +28,36 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "数据总览", icon: BarChart3Icon },
-  { href: "/players", label: "玩家列表", icon: UsersIcon },
-];
+interface StatusPlugin {
+  id: string;
+  name: string;
+  description: string;
+  landing: string;
+}
+
+/** 各插件的导航项（客户端图标在此绑定，服务端注册表不含 UI 信息）。 */
+const PLUGIN_NAV: Record<
+  string,
+  {
+    label: string;
+    items: { href: string; label: string; icon: typeof BarChart3Icon }[];
+  }
+> = {
+  playertime: {
+    label: "PlayerTime · 时长",
+    items: [
+      { href: "/dashboard", label: "数据总览", icon: BarChart3Icon },
+      { href: "/players", label: "玩家列表", icon: UsersIcon },
+    ],
+  },
+  playersignin: {
+    label: "PlayerSignIn · 签到",
+    items: [
+      { href: "/signin", label: "签到总览", icon: CalendarCheckIcon },
+      { href: "/signin/players", label: "签到玩家", icon: UsersIcon },
+    ],
+  },
+};
 
 export default function AnalysisLayout({
   children,
@@ -37,17 +67,24 @@ export default function AnalysisLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [setupOpen, setSetupOpen] = useState(false);
+  const [plugins, setPlugins] = useState<StatusPlugin[] | null>(null);
 
   useEffect(() => {
     fetch("/api/mysql/status")
       .then((response) => response.json())
-      .then((status: { configured: boolean }) => {
+      .then((status: { configured: boolean; plugins?: StatusPlugin[] }) => {
         if (!status.configured) {
           router.replace("/setup");
+          return;
         }
+        setPlugins(status.plugins ?? []);
       })
       .catch(() => undefined);
   }, [router]);
+
+  const navGroups = (plugins ?? [])
+    .map((plugin) => ({ plugin, nav: PLUGIN_NAV[plugin.id] }))
+    .filter((entry) => entry.nav);
 
   return (
     <SidebarProvider>
@@ -55,31 +92,43 @@ export default function AnalysisLayout({
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}>
+              <SidebarMenuButton
+                size="lg"
+                render={
+                  <Link href={plugins?.[0]?.landing ?? "/dashboard"} />
+                }
+              >
                 <span className="font-semibold">HandyInsight</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>PlayerTime 分析</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {NAV_ITEMS.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      isActive={pathname.startsWith(item.href)}
-                      render={<Link href={item.href} />}
-                    >
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          {navGroups.map(({ plugin, nav }) => (
+            <SidebarGroup key={plugin.id}>
+              <SidebarGroupLabel>{nav.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {nav.items.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        isActive={pathname.startsWith(item.href)}
+                        render={<Link href={item.href} />}
+                      >
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+          {plugins !== null && navGroups.length === 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel>未启用任何插件</SidebarGroupLabel>
+            </SidebarGroup>
+          )}
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
@@ -97,7 +146,7 @@ export default function AnalysisLayout({
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-6" />
           <span className="text-sm text-muted-foreground">
-            PlayerTime 数据分析
+            HandyInsight 数据分析
           </span>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>

@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-import { mysqlConfigSchema, type MysqlConfig } from "@/lib/schemas/mysql";
+import { mysqlConfigSchema, type MysqlConfig } from "@/lib/common/schemas";
 
 const CONFIG_DIR = path.join(process.cwd(), ".data");
 const CONFIG_FILE = path.join(CONFIG_DIR, "mysql.json");

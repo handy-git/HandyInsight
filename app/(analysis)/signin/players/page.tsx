@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { AlertCircleIcon, SearchIcon, UsersIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -41,20 +40,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchJson, formatSeconds } from "@/lib/common/format";
-import type { Paginated, PlayerListItem } from "@/lib/plugins/playertime/types";
+import { fetchJson } from "@/lib/common/format";
+import type { Paginated } from "@/lib/common/types";
+import type { SignInPlayerItem } from "@/lib/plugins/playersignin/types";
 
-export default function PlayersPage() {
+export default function SignInPlayersPage() {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
-  const [data, setData] = useState<Paginated<PlayerListItem> | null>(null);
+  const [data, setData] = useState<Paginated<SignInPlayerItem> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback((nextKeyword: string, nextPage: number) => {
-    fetchJson<Paginated<PlayerListItem>>(
-      `/api/playertime/players?keyword=${encodeURIComponent(nextKeyword)}&page=${nextPage}`,
+    fetchJson<Paginated<SignInPlayerItem>>(
+      `/api/playersignin/players?keyword=${encodeURIComponent(nextKeyword)}&page=${nextPage}`,
     )
       .then(setData)
       .catch((err: Error) => setError(err.message));
@@ -74,8 +74,8 @@ export default function PlayersPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>玩家列表</CardTitle>
-        <CardDescription>按玩家名称搜索，点击行进入玩家详情</CardDescription>
+        <CardTitle>签到玩家</CardTitle>
+        <CardDescription>按玩家名称搜索，点击行进入签到详情</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <InputGroup className="max-w-sm">
@@ -109,7 +109,9 @@ export default function PlayersPage() {
               </EmptyMedia>
               <EmptyTitle>没有找到玩家</EmptyTitle>
               <EmptyDescription>
-                {keyword ? `没有名称包含“${keyword}”的玩家。` : "还没有任何玩家数据。"}
+                {keyword
+                  ? `没有名称包含“${keyword}”的玩家。`
+                  : "还没有任何签到记录。"}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -119,11 +121,10 @@ export default function PlayersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>玩家</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead className="text-right">今日</TableHead>
-                  <TableHead className="text-right">本周</TableHead>
-                  <TableHead className="text-right">本月</TableHead>
-                  <TableHead className="text-right">总计</TableHead>
+                  <TableHead className="text-right">累计签到</TableHead>
+                  <TableHead className="text-right">本月签到</TableHead>
+                  <TableHead className="text-right">最近签到</TableHead>
+                  <TableHead className="text-right">补签卡</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -131,25 +132,20 @@ export default function PlayersPage() {
                   <TableRow
                     key={player.uuid}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/players/${player.uuid}`)}
+                    onClick={() => router.push(`/signin/players/${player.uuid}`)}
                   >
                     <TableCell className="font-medium">{player.name}</TableCell>
-                    <TableCell>
-                      <Badge variant={player.online ? "default" : "outline"}>
-                        {player.online ? "在线" : "离线"}
-                      </Badge>
+                    <TableCell className="text-right">
+                      {player.totalSigns} 次
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatSeconds(player.todaySeconds)}
+                      {player.monthSigns} 次
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatSeconds(player.weekSeconds)}
+                      {player.lastSignAt ?? "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatSeconds(player.monthSeconds)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatSeconds(player.totalSeconds)}
+                      {player.cards} 张
                     </TableCell>
                   </TableRow>
                 ))}

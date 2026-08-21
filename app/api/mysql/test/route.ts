@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { mysqlConfigSchema } from "@/lib/schemas/mysql";
+import { mysqlConfigSchema } from "@/lib/common/schemas";
 import { testConnection } from "@/lib/server/mysql";
 
 /** 测试连接：不落盘，仅验证网络、账号、数据库与目标表。 */

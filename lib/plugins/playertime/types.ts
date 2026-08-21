@@ -1,3 +1,7 @@
+import type { Paginated } from "@/lib/common/types";
+
+export type { Paginated };
+
 export interface PlayertimeOverview {
   onlinePlayers: number;
   todayActivePlayers: number;
@@ -56,13 +60,6 @@ export interface SessionItem {
   /** 未结束会话为 null */
   quitTime: string | null;
   seconds: number;
-}
-
-export interface Paginated<T> {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
 }
 
 export type TrendRange = "7d" | "30d";

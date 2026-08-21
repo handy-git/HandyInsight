@@ -15,5 +15,3 @@ export const mysqlConfigSchema = z.object({
 });
 
 export type MysqlConfig = z.infer<typeof mysqlConfigSchema>;
-
-export const REQUIRED_TABLES = ["player_time", "player_time_record"] as const;

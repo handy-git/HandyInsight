@@ -1,7 +1,9 @@
 import mysql from "mysql2/promise";
 
-import { REQUIRED_TABLES, type MysqlConfig } from "@/lib/schemas/mysql";
+import type { PluginMeta } from "@/lib/common/plugins";
+import { type MysqlConfig } from "@/lib/common/schemas";
 import { loadMysqlConfig } from "@/lib/server/config";
+import { detectEnabledPlugins } from "@/lib/server/plugins";
 
 /** 友好化常见连接错误，接口只返回该信息，不泄露 SQL 与地址细节。 */
 export function friendlyMysqlError(error: unknown): string {
@@ -42,20 +44,28 @@ function toPoolOptions(config: MysqlConfig): mysql.PoolOptions {
   };
 }
 
-interface PoolCache {
+interface ServerCache {
   pool: mysql.Pool | null;
+  /** 已启用插件缓存，随连接池重建而失效 */
+  enabledPlugins: PluginMeta[] | null;
 }
 
-const globalCache = globalThis as unknown as { __handyinsightPool?: PoolCache };
-const cache: PoolCache = globalCache.__handyinsightPool ?? { pool: null };
-globalCache.__handyinsightPool = cache;
+const globalCache = globalThis as unknown as {
+  __handyinsightServer?: ServerCache;
+};
+const cache: ServerCache = globalCache.__handyinsightServer ?? {
+  pool: null,
+  enabledPlugins: null,
+};
+globalCache.__handyinsightServer = cache;
 
-/** 重建只读连接池（保存新配置后调用）。 */
+/** 重建只读连接池（保存新配置后调用），同时失效插件探测缓存。 */
 export async function rebuildPool(): Promise<void> {
   if (cache.pool) {
     await cache.pool.end().catch(() => undefined);
-    cache.pool = null;
   }
+  cache.pool = null;
+  cache.enabledPlugins = null;
   const config = await loadMysqlConfig();
   if (config) {
     cache.pool = mysql.createPool(toPoolOptions(config));
@@ -81,30 +91,63 @@ export async function pingSavedConnection(): Promise<boolean> {
   }
 }
 
+/**
+ * 当前已启用的插件（按数据表探测）。
+ * 未配置返回空数组；数据库不可达时按无可用插件处理。
+ */
+export async function getEnabledPlugins(): Promise<PluginMeta[]> {
+  if (cache.enabledPlugins) {
+    return cache.enabledPlugins;
+  }
+  const config = await loadMysqlConfig();
+  const pool = await getPool();
+  if (!config || !pool) {
+    return [];
+  }
+  try {
+    cache.enabledPlugins = await detectEnabledPlugins(
+      config.database,
+      async (sql, params) => {
+        const [rows] = await pool.query<mysql.RowDataPacket[]>(sql, params);
+        return rows;
+      },
+    );
+  } catch {
+    return [];
+  }
+  return cache.enabledPlugins;
+}
+
 export type TestResult =
-  | { ok: true }
+  | { ok: true; plugins: PluginMeta[] }
   | { ok: false; message: string };
 
-/** 使用临时连接验证网络、账号、数据库以及 PlayerTime 目标表。 */
+/**
+ * 使用临时连接验证网络、账号、数据库，并按插件注册表探测可用模块。
+ * 至少能启用一个插件才视为有效库。
+ */
 export async function testConnection(config: MysqlConfig): Promise<TestResult> {
   let connection: mysql.Connection | null = null;
   try {
     connection = await mysql.createConnection(toPoolOptions(config));
-    const [rows] = await connection.query<mysql.RowDataPacket[]>(
-      `SELECT TABLE_NAME AS tableName
-         FROM information_schema.TABLES
-        WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN (?, ?)`,
-      [config.database, REQUIRED_TABLES[0], REQUIRED_TABLES[1]],
+    const plugins = await detectEnabledPlugins(
+      config.database,
+      async (sql, params) => {
+        const [rows] = await connection!.query<mysql.RowDataPacket[]>(
+          sql,
+          params,
+        );
+        return rows;
+      },
     );
-    const found = new Set(rows.map((row) => String(row.tableName)));
-    const missing = REQUIRED_TABLES.filter((table) => !found.has(table));
-    if (missing.length > 0) {
+    if (plugins.length === 0) {
       return {
         ok: false,
-        message: `不是有效的 PlayerTime 数据库：缺少数据表 ${missing.join("、")}`,
+        message:
+          "不是有效的插件数据库：未找到任何受支持插件的数据表（如 player_time、player_sign_in）",
       };
     }
-    return { ok: true };
+    return { ok: true, plugins };
   } catch (error) {
     return { ok: false, message: friendlyMysqlError(error) };
   } finally {
@@ -127,9 +170,28 @@ export async function query<T extends mysql.QueryResult>(
   return rows;
 }
 
+/** 校验插件是否已启用，未启用时抛出 PluginUnavailableError。 */
+export async function requirePlugin(pluginId: string): Promise<void> {
+  const pool = await getPool();
+  if (!pool) {
+    throw new MysqlNotConfiguredError();
+  }
+  const enabled = await getEnabledPlugins();
+  if (!enabled.some((plugin) => plugin.id === pluginId)) {
+    throw new PluginUnavailableError(pluginId);
+  }
+}
+
 export class MysqlNotConfiguredError extends Error {
   constructor() {
     super("MySQL 尚未配置");
     this.name = "MysqlNotConfiguredError";
+  }
+}
+
+export class PluginUnavailableError extends Error {
+  constructor(public readonly pluginId: string) {
+    super(`插件 ${pluginId} 未启用`);
+    this.name = "PluginUnavailableError";
   }
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { mysqlConfigSchema } from "@/lib/schemas/mysql";
+import { mysqlConfigSchema } from "@/lib/common/schemas";
 import { saveMysqlConfig } from "@/lib/server/config";
 import { rebuildPool, testConnection } from "@/lib/server/mysql";
 

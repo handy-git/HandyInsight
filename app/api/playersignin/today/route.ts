@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { getOverview } from "@/lib/plugins/playertime/queries";
+import { getTodaySignIns } from "@/lib/plugins/playersignin/queries";
 import { apiError } from "@/lib/server/api";
 import { requirePlugin } from "@/lib/server/mysql";
 
 export async function GET() {
   try {
-    await requirePlugin("playertime");
-    return NextResponse.json(await getOverview());
+    await requirePlugin("playersignin");
+    return NextResponse.json(await getTodaySignIns());
   } catch (error) {
     return apiError(error);
   }

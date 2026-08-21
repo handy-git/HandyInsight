@@ -51,13 +51,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchJson, formatSeconds, secondsToHours } from "@/lib/format";
+import { fetchJson, formatSeconds, secondsToHours } from "@/lib/common/format";
 import type {
   Paginated,
   PlayerDetail,
   SessionItem,
   TrendPoint,
-} from "@/types/playertime";
+} from "@/lib/plugins/playertime/types";
 
 type DetailResponse = PlayerDetail & { trend: TrendPoint[] };
 

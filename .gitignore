@@ -43,3 +43,6 @@ next-env.d.ts
 
 # runtime config (contains MySQL credentials)
 /.data/
+
+# internal planning document
+/计划.md

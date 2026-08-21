@@ -1,6 +1,6 @@
 # HandyInsight
 
-PlayerTime（Minecraft 插件）MySQL 数据的只读分析面板。完整需求与约束见根目录 `计划.md`。
+PlayerTime（Minecraft 插件）MySQL 数据的只读分析面板。
 
 ## 功能
 

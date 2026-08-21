@@ -146,7 +146,7 @@ export default function AuthmePlayersPage() {
                       key={account.username}
                       className="cursor-pointer"
                       onClick={() =>
-                        router.push(`/players/name:${account.username}`)
+                        router.push(`/authme/players/${account.username}`)
                       }
                     >
                       <TableCell>

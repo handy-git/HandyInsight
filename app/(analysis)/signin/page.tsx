@@ -201,7 +201,7 @@ export default function SignInDashboardPage() {
                     <TableRow
                       key={item.uuid}
                       className="cursor-pointer"
-                      onClick={() => router.push(`/players/${item.uuid}`)}
+                      onClick={() => router.push(`/signin/players/${item.uuid}`)}
                     >
                       <TableCell>
                         <Badge variant={item.rank <= 3 ? "default" : "outline"}>
@@ -263,7 +263,7 @@ export default function SignInDashboardPage() {
                     <TableRow
                       key={entry.uuid}
                       className="cursor-pointer"
-                      onClick={() => router.push(`/players/${entry.uuid}`)}
+                      onClick={() => router.push(`/signin/players/${entry.uuid}`)}
                     >
                       <TableCell>
                         <Badge variant={entry.rank <= 3 ? "default" : "outline"}>

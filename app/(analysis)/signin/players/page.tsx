@@ -134,7 +134,7 @@ export default function SignInPlayersPage() {
                     <TableRow
                       key={player.uuid}
                       className="cursor-pointer"
-                      onClick={() => router.push(`/players/${player.uuid}`)}
+                      onClick={() => router.push(`/signin/players/${player.uuid}`)}
                     >
                       <TableCell>
                         <span className="flex items-center gap-2">

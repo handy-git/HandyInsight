@@ -233,7 +233,7 @@ export default function AuthmeDashboardPage() {
                       key={login.username}
                       className="cursor-pointer"
                       onClick={() =>
-                        router.push(`/players/name:${login.username}`)
+                        router.push(`/authme/players/${login.username}`)
                       }
                     >
                       <TableCell>
@@ -296,7 +296,7 @@ export default function AuthmeDashboardPage() {
                       key={registration.username}
                       className="cursor-pointer"
                       onClick={() =>
-                        router.push(`/players/name:${registration.username}`)
+                        router.push(`/authme/players/${registration.username}`)
                       }
                     >
                       <TableCell>

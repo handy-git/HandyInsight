@@ -159,7 +159,7 @@ export default function UnifiedPlayerDetailPage({
         <AlertDescription>
           {error}
           <Link href="/players" className="ml-2 underline">
-            返回玩家中心
+            返回聚合玩家
           </Link>
         </AlertDescription>
       </Alert>
@@ -202,8 +202,8 @@ export default function UnifiedPlayerDetailPage({
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/players" />}>
-              玩家中心
+            <BreadcrumbLink render={<Link href="/overview/players" />}>
+              聚合玩家
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

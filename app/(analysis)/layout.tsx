@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3Icon,
   CalendarCheckIcon,
+  LayoutDashboardIcon,
   SettingsIcon,
   ShieldCheckIcon,
   UsersIcon,
@@ -48,7 +49,7 @@ const PLUGIN_NAV: Record<
     label: "PlayerTime · 时长",
     items: [
       { href: "/dashboard", label: "数据总览", icon: BarChart3Icon },
-      { href: "/players", label: "玩家中心", icon: UsersIcon },
+      { href: "/players", label: "玩家列表", icon: UsersIcon },
     ],
   },
   playersignin: {
@@ -112,6 +113,24 @@ export default function AnalysisLayout({
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
+          {plugins !== null && navGroups.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel>总览</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={pathname.startsWith("/overview")}
+                      render={<Link href="/overview/players" />}
+                    >
+                      <LayoutDashboardIcon />
+                      <span>聚合玩家</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
           {navGroups.map(({ plugin, nav }) => (
             <SidebarGroup key={plugin.id}>
               <SidebarGroupLabel>{nav.label}</SidebarGroupLabel>

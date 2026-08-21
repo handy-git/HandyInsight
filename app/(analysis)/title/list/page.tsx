@@ -133,6 +133,7 @@ export default function TitleListPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>称号</TableHead>
+                  <TableHead>描述</TableHead>
                   <TableHead>价格</TableHead>
                   <TableHead>时长</TableHead>
                   <TableHead>粒子</TableHead>
@@ -143,17 +144,15 @@ export default function TitleListPage() {
               <TableBody>
                 {data.items.map((item) => (
                   <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      <McText text={item.titleName} />
+                    </TableCell>
                     <TableCell>
-                      <span className="flex flex-col">
-                        <span className="font-medium">
-                            <McText text={item.titleName} />
-                          </span>
-                        {item.description && (
-                          <span className="text-xs text-muted-foreground">
-                            {item.description}
-                          </span>
-                        )}
-                      </span>
+                      {item.description ? (
+                        <McText text={item.description} />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>{formatPrice(item)}</TableCell>
                     <TableCell>{formatDuration(item.day)}</TableCell>

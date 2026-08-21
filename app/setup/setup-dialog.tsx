@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
+  BlocksIcon,
   CheckCircle2Icon,
   DatabaseIcon,
   GlobeIcon,
+  GripVerticalIcon,
   KeyRoundIcon,
   MonitorIcon,
   MoonIcon,
@@ -47,6 +49,13 @@ import {
   subscribeTheme,
   type ThemeMode,
 } from "@/lib/common/theme";
+import {
+  getPluginPrefsSnapshot,
+  getServerPluginPrefsSnapshot,
+  setPluginPrefs,
+  subscribePluginPrefs,
+  type PluginPrefs,
+} from "@/lib/common/plugin-prefs";
 
 interface FormState {
   host: string;
@@ -97,6 +106,81 @@ export function SettingsDialog({
     getThemeSnapshot,
     getServerThemeSnapshot,
   );
+  const prefs = useSyncExternalStore(
+    subscribePluginPrefs,
+    getPluginPrefsSnapshot,
+    getServerPluginPrefsSnapshot,
+  );
+  const [enabledPlugins, setEnabledPlugins] = useState<
+    { id: string; name: string; description: string }[] | null
+  >(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverride, setDragOverride] = useState<
+    { id: string; name: string; description: string }[] | null
+  >(null);
+
+  // 设置弹窗打开时加载已启用插件列表
+  useEffect(() => {
+    if (!open || mode !== "settings") return;
+    let cancelled = false;
+    fetch("/api/mysql/status")
+      .then((response) => response.json())
+      .then((status: {
+        configured: boolean;
+        plugins?: { id: string; name: string; description: string }[];
+      }) => {
+        if (cancelled) return;
+        setEnabledPlugins(status.plugins ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setEnabledPlugins([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode]);
+
+  // 展示顺序：注册表顺序 + 偏好排序（拖拽中覆盖）
+  const sortedPlugins = useMemo(() => {
+    if (!enabledPlugins) return [];
+    const orderIndex = new Map(prefs.order.map((id, index) => [id, index]));
+    return [...enabledPlugins]
+      .map((plugin, index) => ({ plugin, index }))
+      .sort(
+        (a, b) =>
+          (orderIndex.get(a.plugin.id) ?? Number.MAX_SAFE_INTEGER + a.index) -
+          (orderIndex.get(b.plugin.id) ?? Number.MAX_SAFE_INTEGER + b.index),
+      )
+      .map((entry) => entry.plugin);
+  }, [enabledPlugins, prefs.order]);
+  const pluginOrder = dragOverride ?? sortedPlugins;
+
+  function persistOrder(list: { id: string }[], hidden: string[]) {
+    const next: PluginPrefs = { order: list.map((plugin) => plugin.id), hidden };
+    setPluginPrefs(next);
+  }
+
+  function handlePluginDragOver(index: number) {
+    if (dragIndex === null || dragIndex === index) return;
+    const next = [...pluginOrder];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(index, 0, moved);
+    setDragOverride(next);
+    setDragIndex(index);
+  }
+
+  function handlePluginDragEnd() {
+    persistOrder(pluginOrder, prefs.hidden);
+    setDragIndex(null);
+    setDragOverride(null);
+  }
+
+  function togglePluginShown(id: string, shown: boolean) {
+    const hidden = shown
+      ? prefs.hidden.filter((item) => item !== id)
+      : [...new Set([...prefs.hidden, id])];
+    persistOrder(pluginOrder, hidden);
+  }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -335,6 +419,10 @@ export function SettingsDialog({
                     <SettingsIcon data-icon="inline-start" />
                     常规
                   </TabsTrigger>
+                  <TabsTrigger value="plugins">
+                    <BlocksIcon data-icon="inline-start" />
+                    插件
+                  </TabsTrigger>
                 </TabsList>
               </nav>
 
@@ -395,6 +483,71 @@ export function SettingsDialog({
                       </ToggleGroupItem>
                     </ToggleGroup>
                   </Field>
+                </TabsContent>
+
+                <TabsContent
+                  value="plugins"
+                  className="flex flex-1 flex-col gap-4 p-4"
+                >
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium">插件管理</p>
+                    <p className="text-xs text-muted-foreground">
+                      控制侧边栏中插件的显示与顺序，拖动左侧手柄调整排序。
+                    </p>
+                  </div>
+                  {enabledPlugins === null ? (
+                    <div className="flex flex-col gap-2">
+                      {Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                          key={index}
+                          className="h-14 rounded-md border bg-muted/40"
+                        />
+                      ))}
+                    </div>
+                  ) : pluginOrder.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      当前没有已启用的插件。
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {pluginOrder.map((plugin, index) => {
+                        const shown = !prefs.hidden.includes(plugin.id);
+                        return (
+                          <div
+                            key={plugin.id}
+                            draggable
+                            onDragStart={() => setDragIndex(index)}
+                            onDragOver={(event) => {
+                              event.preventDefault();
+                              handlePluginDragOver(index);
+                            }}
+                            onDragEnd={handlePluginDragEnd}
+                            className="flex items-center gap-3 rounded-md border px-3 py-2 transition-colors"
+                          >
+                            <GripVerticalIcon className="cursor-grab text-muted-foreground" />
+                            <div className="flex flex-1 flex-col">
+                              <span className="text-sm font-medium">
+                                {plugin.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {plugin.description}
+                              </span>
+                            </div>
+                            <Switch
+                              checked={shown}
+                              onCheckedChange={(checked) =>
+                                togglePluginShown(plugin.id, checked)
+                              }
+                              aria-label={`显示 ${plugin.name}`}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    开关只控制侧边栏显示，不影响数据采集与接口。
+                  </p>
                 </TabsContent>
               </div>
             </div>

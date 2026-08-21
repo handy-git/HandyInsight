@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3Icon,
   CalendarCheckIcon,
+  ChevronDownIcon,
   LayoutDashboardIcon,
   MedalIcon,
   PawPrintIcon,
@@ -15,7 +16,18 @@ import {
 } from "lucide-react";
 
 import { SettingsDialog } from "@/app/setup/setup-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
+import {
+  applyPluginPrefs,
+  getPluginPrefsSnapshot,
+  getServerPluginPrefsSnapshot,
+  subscribePluginPrefs,
+} from "@/lib/common/plugin-prefs";
 import {
   Sidebar,
   SidebarContent,
@@ -94,6 +106,11 @@ export default function AnalysisLayout({
   const router = useRouter();
   const [setupOpen, setSetupOpen] = useState(false);
   const [plugins, setPlugins] = useState<StatusPlugin[] | null>(null);
+  const prefs = useSyncExternalStore(
+    subscribePluginPrefs,
+    getPluginPrefsSnapshot,
+    getServerPluginPrefsSnapshot,
+  );
 
   useEffect(() => {
     fetch("/api/mysql/status")
@@ -108,9 +125,12 @@ export default function AnalysisLayout({
       .catch(() => undefined);
   }, [router]);
 
-  const navGroups = (plugins ?? [])
-    .map((plugin) => ({ plugin, nav: PLUGIN_NAV[plugin.id] }))
-    .filter((entry) => entry.nav);
+  const navGroups = applyPluginPrefs(
+    (plugins ?? [])
+      .map((plugin) => ({ id: plugin.id, plugin, nav: PLUGIN_NAV[plugin.id] }))
+      .filter((entry) => entry.nav),
+    prefs,
+  );
 
   return (
     <SidebarProvider>
@@ -149,24 +169,34 @@ export default function AnalysisLayout({
             </SidebarGroup>
           )}
           {navGroups.map(({ plugin, nav }) => (
-            <SidebarGroup key={plugin.id}>
-              <SidebarGroupLabel>{nav.label}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {nav.items.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        isActive={pathname.startsWith(item.href)}
-                        render={<Link href={item.href} />}
-                      >
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <Collapsible key={plugin.id} defaultOpen>
+              <SidebarGroup>
+                <SidebarGroupLabel
+                  render={<CollapsibleTrigger />}
+                  className="group/trigger cursor-pointer"
+                >
+                  {nav.label}
+                  <ChevronDownIcon className="ml-auto transition-transform group-data-[panel-open]/trigger:rotate-180" />
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {nav.items.map((item) => (
+                        <SidebarMenuItem key={item.href}>
+                          <SidebarMenuButton
+                            isActive={pathname.startsWith(item.href)}
+                            render={<Link href={item.href} />}
+                          >
+                            <item.icon />
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </SidebarGroup>
+            </Collapsible>
           ))}
           {plugins !== null && navGroups.length === 0 && (
             <SidebarGroup>

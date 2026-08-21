@@ -15,8 +15,10 @@ export async function GET(
   try {
     await requirePlugin("playersignin");
     const uuid = signInUuidSchema.parse((await params).uuid);
-    const { page } = signInPageQuerySchema.parse(searchParamsObject(request));
-    return NextResponse.json(await getSignInRecords(uuid, page));
+    const { page, pageSize } = signInPageQuerySchema.parse(
+      searchParamsObject(request),
+    );
+    return NextResponse.json(await getSignInRecords(uuid, page, pageSize));
   } catch (error) {
     return apiError(error);
   }

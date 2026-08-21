@@ -12,8 +12,10 @@ export async function GET(
   try {
     await requirePlugin("playertime");
     const uuid = uuidSchema.parse((await params).uuid);
-    const { page } = pageQuerySchema.parse(searchParamsObject(request));
-    return NextResponse.json(await getPlayerSessions(uuid, page));
+    const { page, pageSize } = pageQuerySchema.parse(
+      searchParamsObject(request),
+    );
+    return NextResponse.json(await getPlayerSessions(uuid, page, pageSize));
   } catch (error) {
     return apiError(error);
   }

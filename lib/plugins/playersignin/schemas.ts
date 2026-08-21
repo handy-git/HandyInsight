@@ -9,6 +9,7 @@ export const signInPlayersQuerySchema = z.object({
 
 export const signInPageQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });
 
 export const signInUuidSchema = z.string().trim().min(1).max(64);

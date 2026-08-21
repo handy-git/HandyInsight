@@ -286,15 +286,16 @@ export async function getRecentSignInRecords(
 export async function getSignInRecords(
   uuid: string,
   page: number,
+  pageSize: number = PAGE_SIZE,
 ): Promise<Paginated<SignInRecord>> {
-  const offset = (page - 1) * PAGE_SIZE;
+  const offset = (page - 1) * pageSize;
   const rows = await query<RowDataPacket[]>(
     `SELECT sign_in_date AS signInDate, \`rank\` AS signRank
        FROM player_sign_in
       WHERE player_uuid = ?
       ORDER BY sign_in_date DESC
       LIMIT ? OFFSET ?`,
-    [uuid, PAGE_SIZE, offset],
+    [uuid, pageSize, offset],
   );
   const countRows = await query<RowDataPacket[]>(
     `SELECT COUNT(*) AS total FROM player_sign_in WHERE player_uuid = ?`,
@@ -307,6 +308,6 @@ export async function getSignInRecords(
     })),
     total: Number(countRows[0]?.total ?? 0),
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
   };
 }

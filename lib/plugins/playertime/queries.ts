@@ -354,8 +354,9 @@ export async function getPlayerDetail(
 export async function getPlayerSessions(
   uuid: string,
   page: number,
+  pageSize: number = PAGE_SIZE,
 ): Promise<Paginated<SessionItem>> {
-  const offset = (page - 1) * PAGE_SIZE;
+  const offset = (page - 1) * pageSize;
   const rows = await query<RowDataPacket[]>(
     `SELECT login_time AS loginTime,
             quit_time AS quitTime,
@@ -364,7 +365,7 @@ export async function getPlayerSessions(
       WHERE player_uuid = ?
       ORDER BY login_time DESC
       LIMIT ? OFFSET ?`,
-    [uuid, PAGE_SIZE, offset],
+    [uuid, pageSize, offset],
   );
   const countRows = await query<RowDataPacket[]>(
     `SELECT COUNT(*) AS total FROM player_time_record WHERE player_uuid = ?`,
@@ -378,7 +379,7 @@ export async function getPlayerSessions(
     })),
     total: Number(countRows[0]?.total ?? 0),
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
   };
 }
 

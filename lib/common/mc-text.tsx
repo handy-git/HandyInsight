@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import {
   MiniMessage,
   TextDecoration,
@@ -239,7 +239,13 @@ function renderComponent(
     );
   }
   children.forEach((child, index) => {
-    nodes.push(renderComponent(child, css, `${keyPrefix}-${index}`));
+    const rendered = renderComponent(child, css, `${keyPrefix}-${index}`);
+    if (rendered !== null) {
+      // 统一包一层带 key 的 Fragment，避免列表子项缺 key
+      nodes.push(
+        <Fragment key={`${keyPrefix}-c${index}`}>{rendered}</Fragment>,
+      );
+    }
   });
 
   if (nodes.length === 0) {

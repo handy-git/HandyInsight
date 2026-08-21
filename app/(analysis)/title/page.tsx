@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
+import { McText } from "@/lib/common/mc-text";
 import { fetchJson } from "@/lib/common/format";
 import type {
   TitleCoinRankEntry,
@@ -144,7 +145,7 @@ export default function TitleDashboardPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {entry.titleName}
+                        <McText text={entry.titleName} />
                       </TableCell>
                       <TableCell className="text-right">
                         {entry.players} 人

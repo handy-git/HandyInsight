@@ -39,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
+import { McText } from "@/lib/common/mc-text";
 import { fetchJson } from "@/lib/common/format";
 import type { CompanionsPlayerDetail } from "@/lib/plugins/companions/types";
 
@@ -187,7 +188,13 @@ export default function CompanionsPlayerDetailPage({
                   <TableCell className="font-medium">
                     {companion.companion}
                   </TableCell>
-                  <TableCell>{companion.customName ?? "—"}</TableCell>
+                  <TableCell>
+                      {companion.customName ? (
+                        <McText text={companion.customName} />
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                   <TableCell>{companion.customWeapon ?? "—"}</TableCell>
                   <TableCell>
                     {companion.nameVisible ? (

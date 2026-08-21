@@ -41,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchJson } from "@/lib/common/format";
+import { McText } from "@/lib/common/mc-text";
 import type { Paginated } from "@/lib/common/types";
 import type { TitleListItem } from "@/lib/plugins/playertitle/types";
 
@@ -144,7 +145,9 @@ export default function TitleListPage() {
                   <TableRow key={item.id}>
                     <TableCell>
                       <span className="flex flex-col">
-                        <span className="font-medium">{item.titleName}</span>
+                        <span className="font-medium">
+                            <McText text={item.titleName} />
+                          </span>
                         {item.description && (
                           <span className="text-xs text-muted-foreground">
                             {item.description}

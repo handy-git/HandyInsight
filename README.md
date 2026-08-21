@@ -24,6 +24,7 @@ Minecraft 插件 MySQL 数据的只读分析面板，采用可插拔模块架构
 - CompanionsPlus：宠物总览、热门宠物与装备排行、宠物玩家列表与详情
 - PlayerTitle：称号总览、称号库、热门称号与称号币排行、玩家称号与到期管理
 - 玩家头像：由 mc-heads.net 提供（按玩家名拉取皮肤，查不到自动回退默认头像；离线服 UUID 无法解析故不使用）
+- Minecraft 富文本：称号等游戏内文本正确解析颜色——MiniMessage（`<red>`、`<gradient>`、`<rainbow>` 等，基于 minimessage-js）与 legacy 代码（`&a`/`§a`）双格式支持
 - 外观设置：跟随系统 / 浅色 / 深色（侧边栏「设置」弹窗内）
 
 ## 技术栈

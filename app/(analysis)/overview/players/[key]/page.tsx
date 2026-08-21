@@ -67,6 +67,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
+import { McText } from "@/lib/common/mc-text";
 import {
   fetchJson,
   formatDateTime,
@@ -619,10 +620,11 @@ export default function UnifiedPlayerDetailPage({
               称号 · PlayerTitle
             </CardTitle>
             <CardDescription>
-              持有 {detail.playertitle.titleCount} 个称号
-              {detail.playertitle.usingTitle
-                ? ` · 佩戴中：${detail.playertitle.usingTitle}`
-                : " · 未佩戴"}
+              持有 {detail.playertitle.titleCount} 个称号 ·{" "}
+              {detail.playertitle.usingTitle ? "佩戴中：" : "未佩戴"}
+              {detail.playertitle.usingTitle && (
+                <McText text={detail.playertitle.usingTitle} />
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -635,7 +637,11 @@ export default function UnifiedPlayerDetailPage({
               </div>
               <div className="flex flex-col">
                 <span className="text-2xl font-semibold text-foreground">
-                  {detail.playertitle.usingTitle ?? "未佩戴"}
+                  {detail.playertitle.usingTitle ? (
+                    <McText text={detail.playertitle.usingTitle} />
+                  ) : (
+                    "未佩戴"
+                  )}
                 </span>
                 <span className="text-xs text-muted-foreground">佩戴中的称号</span>
               </div>

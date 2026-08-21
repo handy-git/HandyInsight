@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
+import { McText } from "@/lib/common/mc-text";
 import { fetchJson } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { TitlePlayerItem } from "@/lib/plugins/playertitle/types";
@@ -152,7 +153,9 @@ export default function TitlePlayersPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {player.usingTitle ?? (
+                      {player.usingTitle ? (
+                        <McText text={player.usingTitle} />
+                      ) : (
                         <span className="text-muted-foreground">未佩戴</span>
                       )}
                     </TableCell>

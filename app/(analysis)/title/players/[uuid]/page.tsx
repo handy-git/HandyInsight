@@ -39,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
+import { McText } from "@/lib/common/mc-text";
 import { fetchJson } from "@/lib/common/format";
 import type { TitlePlayerDetail } from "@/lib/plugins/playertitle/types";
 
@@ -126,7 +127,7 @@ export default function TitlePlayerDetailPage({
                 {detail.usingTitle && (
                   <Badge>
                     <MedalIcon data-icon="inline-start" />
-                    {detail.usingTitle}
+                    <McText text={detail.usingTitle} />
                   </Badge>
                 )}
               </span>
@@ -193,7 +194,7 @@ export default function TitlePlayerDetailPage({
                 {detail.titles.map((title, index) => (
                   <TableRow key={`${title.titleId}-${index}`}>
                     <TableCell className="font-medium">
-                      {title.titleName}
+                      <McText text={title.titleName} />
                     </TableCell>
                     <TableCell>{title.expirationTime}</TableCell>
                     <TableCell>

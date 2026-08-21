@@ -176,6 +176,8 @@ export default function UnifiedPlayersPage() {
                   <TableHead>注册时间</TableHead>
                   <TableHead className="text-right">总时长</TableHead>
                   <TableHead className="text-right">签到</TableHead>
+                  <TableHead className="text-right">宠物</TableHead>
+                  <TableHead className="text-right">宠物币</TableHead>
                   <TableHead className="text-right">最近活跃</TableHead>
                 </TableRow>
               </TableHeader>
@@ -209,6 +211,14 @@ export default function UnifiedPlayersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       {player.totalSigns > 0 ? `${player.totalSigns} 次` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {player.companionCount > 0 ? `${player.companionCount} 只` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {player.companionCoins === null
+                        ? "—"
+                        : new Intl.NumberFormat("zh-CN").format(player.companionCoins)}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {relativeTime(player.lastActiveAt)}

@@ -9,6 +9,8 @@ import {
 
 /** 统一错误响应：不返回 SQL、密码、数据库地址或服务端路径。 */
 export function apiError(error: unknown): NextResponse {
+  // 完整错误只进服务端日志，便于排查；响应体只携带用户可读文案
+  console.error("[api-error]", error);
   if (error instanceof MysqlNotConfiguredError) {
     return NextResponse.json(
       { ok: false, message: "MySQL 尚未配置，请先完成连接配置" },

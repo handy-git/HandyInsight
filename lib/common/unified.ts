@@ -12,6 +12,10 @@ export interface UnifiedPlayerItem {
   online: boolean;
   totalSeconds: number;
   totalSigns: number;
+  /** 拥有宠物数（CompanionsPlus） */
+  companionCount: number;
+  /** 宠物货币（CompanionsPlus） */
+  companionCoins: number | null;
 }
 
 export interface UnifiedPlayerDetail {

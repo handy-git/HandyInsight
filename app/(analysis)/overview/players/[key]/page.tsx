@@ -164,7 +164,7 @@ export default function UnifiedPlayerDetailPage({
         <AlertTitle>加载玩家详情失败</AlertTitle>
         <AlertDescription>
           {error}
-          <Link href="/players" className="ml-2 underline">
+          <Link href="/overview/players" className="ml-2 underline">
             返回全服玩家
           </Link>
         </AlertDescription>

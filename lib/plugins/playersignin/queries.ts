@@ -262,6 +262,25 @@ export async function getSignInPlayerDetail(
   };
 }
 
+/** 玩家最近 N 条签到记录（单条 SQL，供时间线使用）。 */
+export async function getRecentSignInRecords(
+  uuid: string,
+  limit = 50,
+): Promise<SignInRecord[]> {
+  const rows = await query<RowDataPacket[]>(
+    `SELECT sign_in_date AS signInDate, \`rank\` AS signRank
+       FROM player_sign_in
+      WHERE player_uuid = ?
+      ORDER BY sign_in_date DESC
+      LIMIT ?`,
+    [uuid, limit],
+  );
+  return rows.map((row) => ({
+    signInDate: formatDateTime(String(row.signInDate)),
+    rank: Number(row.signRank),
+  }));
+}
+
 /* ---------- 玩家签到记录（分页） ---------- */
 
 export async function getSignInRecords(

@@ -5,8 +5,8 @@ import { formatDateTime } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import { getPlayerDetail, getTrend } from "@/lib/plugins/playertime/queries";
 import {
+  getRecentSignInRecords,
   getSignInPlayerDetail,
-  getSignInRecords,
 } from "@/lib/plugins/playersignin/queries";
 import { getAuthmeAccountDetail } from "@/lib/plugins/authme/queries";
 import {
@@ -64,10 +64,13 @@ export async function getUnifiedPlayers(
     keyword ? entry.name.toLowerCase().includes(lowered) : true,
   );
 
-  // 在线集合与统计键：小表全量拉取后在内存对齐（规模受注册玩家数约束）
+  // 在线集合与统计键：小表全量拉取后在内存对齐（规模受注册玩家数约束），
+  // 每类统计一条聚合 SQL，禁止循环逐玩家查询
   const onlineSet = new Set<string>();
   const playtimeSeconds = new Map<string, number>();
   const signinCounts = new Map<string, number>();
+  const companionCounts = new Map<string, number>();
+  const companionCoins = new Map<string, number>();
 
   if (enabled.has("playertime")) {
     const onlineRows = await query<RowDataPacket[]>(
@@ -93,6 +96,25 @@ export async function getUnifiedPlayers(
     }
   }
 
+  if (enabled.has("companions")) {
+    const [countRows, coinRows] = await Promise.all([
+      query<RowDataPacket[]>(
+        `SELECT player_uuid AS uuid, COUNT(*) AS total FROM companions_owned GROUP BY player_uuid`,
+      ),
+      query<RowDataPacket[]>(
+        `SELECT player_uuid AS uuid, coins FROM companions_coin`,
+      ),
+    ]);
+    for (const row of countRows) {
+      companionCounts.set(String(row.uuid), Number(row.total));
+    }
+    for (const row of coinRows) {
+      if (row.coins !== null && row.coins !== undefined) {
+        companionCoins.set(String(row.uuid), Number(row.coins));
+      }
+    }
+  }
+
   const nameToUuid = new Map<string, string>();
   for (const entry of registry) {
     if (entry.uuid) {
@@ -112,6 +134,8 @@ export async function getUnifiedPlayers(
       online: uuid ? onlineSet.has(uuid) : false,
       totalSeconds: uuid ? (playtimeSeconds.get(uuid) ?? 0) : 0,
       totalSigns: uuid ? (signinCounts.get(uuid) ?? 0) : 0,
+      companionCount: uuid ? (companionCounts.get(uuid) ?? 0) : 0,
+      companionCoins: uuid ? (companionCoins.get(uuid) ?? null) : null,
     };
   });
 
@@ -309,16 +333,10 @@ export async function getUnifiedPlayerTimeline(
   if (uuid && enabled.has("playersignin")) {
     tasks.push(
       (async () => {
-        const records = await getSignInRecords(uuid, 1);
-        // 记录接口按页返回，这里翻最近几页取最近 50 条
-        const items = [...records.items];
-        if (records.total > records.pageSize) {
-          const secondPage = await getSignInRecords(uuid, 2);
-          items.push(...secondPage.items);
-        }
-        for (const record of items.slice(0, 50)) {
+        const items = await getRecentSignInRecords(uuid, 50);
+        for (const record of items) {
           events.push({
-            at: formatDateTime(record.signInDate),
+            at: record.signInDate,
             type: "signin",
             text: `签到（当日第 ${record.rank} 名）`,
           });

@@ -151,9 +151,8 @@ export async function getCompanionsPlayerDetail(
 ): Promise<CompanionsPlayerDetail | null> {
   const [ownedRows, activeRows, coinRows, equipmentRows] = await Promise.all([
     query<RowDataPacket[]>(
-      `SELECT companion, custom_name AS customName,
-              custom_weapon AS customWeapon,
-              name_visible AS nameVisible, ability_level AS abilityLevel
+      // 注意：该表列名为驼峰（customWeapon/customName/nameVisible/abilityLevel）
+      `SELECT companion, customName, customWeapon, nameVisible, abilityLevel
          FROM companions_owned
         WHERE player_uuid = ?
         ORDER BY abilityLevel DESC, companion ASC`,

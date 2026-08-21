@@ -107,6 +107,7 @@ export default function UnifiedPlayerDetailPage({
 
   const [sessionPage, setSessionPage] = useState(1);
   const [sessions, setSessions] = useState<Paginated<SessionItem> | null>(null);
+  const [timelinePage, setTimelinePage] = useState(1);
   const [recordPage, setRecordPage] = useState(1);
   const [records, setRecords] = useState<Paginated<SignInRecord> | null>(null);
   const uuid = detail?.uuid ?? null;
@@ -242,22 +243,7 @@ export default function UnifiedPlayerDetailPage({
                   <Badge variant="outline">离线</Badge>
                 )}
               </span>
-              <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
-                <span className="flex gap-1">
-                  {detail.sources.map((source) => (
-                    <Badge key={source} variant="outline">
-                      {source === "playertime"
-                        ? "PlayerTime"
-                        : source === "playersignin"
-                          ? "PlayerSignIn"
-                          : source === "companions"
-                            ? "CompanionsPlus"
-                            : source === "playertitle"
-                              ? "PlayerTitle"
-                              : "AuthMe"}
-                    </Badge>
-                  ))}
-                </span>
+              <span className="text-xs font-normal text-muted-foreground">
                 {detail.uuid && <span className="break-all">{detail.uuid}</span>}
               </span>
             </span>
@@ -291,7 +277,15 @@ export default function UnifiedPlayerDetailPage({
           <Card key={card.title}>
             <CardHeader>
               <CardDescription>{card.title}</CardDescription>
-              <CardTitle className="text-2xl">{card.value}</CardTitle>
+              <CardTitle
+                className={
+                  card.title === "最近活跃" && detail.lastActiveAt
+                    ? "text-lg whitespace-nowrap"
+                    : "text-2xl"
+                }
+              >
+                {card.value}
+              </CardTitle>
             </CardHeader>
           </Card>
         ))}
@@ -303,149 +297,370 @@ export default function UnifiedPlayerDetailPage({
             <CardTitle>活动时间线</CardTitle>
             <CardDescription>登录、会话与签到事件，按时间倒序</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-4">
             <ol className="flex flex-col gap-3">
-              {timeline.slice(0, 30).map((event, index) => {
-                const Icon = EVENT_ICONS[event.type];
-                return (
-                  <li key={`${event.at}-${index}`} className="flex items-start gap-3">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                      <Icon className="size-4 text-muted-foreground" />
-                    </span>
-                    <span className="flex flex-col">
-                      <span className="text-sm">{event.text}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDateTime(event.at) || event.at}
+              {timeline
+                .slice((timelinePage - 1) * 5, timelinePage * 5)
+                .map((event, index) => {
+                  const Icon = EVENT_ICONS[event.type];
+                  return (
+                    <li
+                      key={`${event.at}-${index}`}
+                      className="flex items-start gap-3"
+                    >
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <Icon className="size-4 text-muted-foreground" />
                       </span>
-                    </span>
-                  </li>
-                );
-              })}
+                      <span className="flex flex-col">
+                        <span className="text-sm">{event.text}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDateTime(event.at) || event.at}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
             </ol>
+            {timeline.length > 5 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  共 {timeline.length} 条事件，第 {timelinePage} /{" "}
+                  {Math.ceil(timeline.length / 5)} 页
+                </span>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        aria-disabled={timelinePage <= 1}
+                        className={
+                          timelinePage <= 1
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
+                        onClick={() =>
+                          setTimelinePage((prev) => Math.max(1, prev - 1))
+                        }
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext
+                        aria-disabled={
+                          timelinePage >= Math.ceil(timeline.length / 5)
+                        }
+                        className={
+                          timelinePage >= Math.ceil(timeline.length / 5)
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
+                        onClick={() =>
+                          setTimelinePage((prev) =>
+                            Math.min(
+                              Math.ceil(timeline.length / 5),
+                              prev + 1,
+                            ),
+                          )
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {detail.playtime && (
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {detail.playtime && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClockIcon className="size-4 text-muted-foreground" />
+              在线时长 · PlayerTime
+            </CardTitle>
+            <CardDescription>
+              今日 {formatSeconds(detail.playtime.todaySeconds)} · 本周{" "}
+              {formatSeconds(detail.playtime.weekSeconds)} · 本月{" "}
+              {formatSeconds(detail.playtime.monthSeconds)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-44 w-full">
+              <AreaChart data={chartData}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Area
+                  type="monotone"
+                  dataKey="hours"
+                  stroke="var(--color-hours)"
+                  fill="var(--color-hours)"
+                  fillOpacity={0.2}
+                />
+              </AreaChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        )}
+
+        {detail.signin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarCheckIcon className="size-4 text-muted-foreground" />
+              签到 · PlayerSignIn
+            </CardTitle>
+            <CardDescription>
+              本月已签到 {detail.signin.monthSigns} 天 · 连续{" "}
+              {detail.signin.streak} 天 · 累计 {detail.signin.totalSigns} 次
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+              {WEEKDAYS.map((weekday) => (
+                <div key={weekday} className="py-1">
+                  {weekday}
+                </div>
+              ))}
+              {Array.from({ length: leadingBlanks }).map((_, index) => (
+                <div key={`blank-${index}`} />
+              ))}
+              {Array.from({ length: daysInMonth }, (_, index) => {
+                const day = index + 1;
+                const signed = signedDays.has(day);
+                return (
+                  <div
+                    key={day}
+                    className={cn(
+                      "flex aspect-square items-center justify-center rounded-md text-sm",
+                      signed &&
+                        "bg-primary font-medium text-primary-foreground",
+                      !signed && day === today && "ring-1 ring-primary",
+                    )}
+                  >
+                    {day}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {detail.playtime && (
+        <Card>
+          <CardHeader>
+            <CardTitle>会话记录</CardTitle>
+            <CardDescription>最近登录会话，按登录时间倒序</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {sessions === null ? (
+              <Skeleton className="h-48 w-full" />
+            ) : sessions.items.length === 0 ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyTitle>暂无会话记录</EmptyTitle>
+                  <EmptyDescription>
+                    该玩家还没有在线会话记录。
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>登录时间</TableHead>
+                      <TableHead>退出时间</TableHead>
+                      <TableHead className="text-right">时长</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sessions.items.map((session, index) => (
+                      <TableRow key={`${session.loginTime}-${index}`}>
+                        <TableCell>{formatDateTime(session.loginTime) || session.loginTime}</TableCell>
+                        <TableCell>
+                          {session.quitTime ? (
+                            formatDateTime(session.quitTime)
+                          ) : (
+                            <Badge variant="default">进行中</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatSeconds(session.seconds)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    共 {sessions.total} 条会话，第 {sessions.page} /{" "}
+                    {sessionTotalPages} 页
+                  </span>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          aria-disabled={sessionPage <= 1}
+                          className={
+                            sessionPage <= 1
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                          onClick={() =>
+                            setSessionPage((prev) => Math.max(1, prev - 1))
+                          }
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          aria-disabled={sessionPage >= sessionTotalPages}
+                          className={
+                            sessionPage >= sessionTotalPages
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                          onClick={() =>
+                            setSessionPage((prev) =>
+                              Math.min(sessionTotalPages, prev + 1),
+                            )
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        )}
+
+        {detail.signin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>签到记录</CardTitle>
+            <CardDescription>按签到时间倒序</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {records === null ? (
+              <Skeleton className="h-48 w-full" />
+            ) : records.items.length === 0 ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyTitle>暂无签到记录</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>签到时间</TableHead>
+                      <TableHead className="text-right">当日名次</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {records.items.map((record, index) => (
+                      <TableRow key={`${record.signInDate}-${index}`}>
+                        <TableCell>{formatDateTime(record.signInDate) || record.signInDate}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge
+                            variant={record.rank <= 3 ? "default" : "outline"}
+                          >
+                            第 {record.rank} 名
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    共 {records.total} 条记录，第 {records.page} /{" "}
+                    {recordTotalPages} 页
+                  </span>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          aria-disabled={recordPage <= 1}
+                          className={
+                            recordPage <= 1
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                          onClick={() =>
+                            setRecordPage((prev) => Math.max(1, prev - 1))
+                          }
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          aria-disabled={recordPage >= recordTotalPages}
+                          className={
+                            recordPage >= recordTotalPages
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                          onClick={() =>
+                            setRecordPage((prev) =>
+                              Math.min(recordTotalPages, prev + 1),
+                            )
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        )}
+      </div>
+
+      {detail.signin && (
         <>
+        {detail.signin.cards.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ClockIcon className="size-4 text-muted-foreground" />
-                在线时长 · PlayerTime
+                <TicketIcon className="size-4 text-muted-foreground" />
+                补签卡
               </CardTitle>
-              <CardDescription>
-                今日 {formatSeconds(detail.playtime.todaySeconds)} · 本周{" "}
-                {formatSeconds(detail.playtime.weekSeconds)} · 本月{" "}
-                {formatSeconds(detail.playtime.monthSeconds)}
-              </CardDescription>
+              <CardDescription>该玩家持有的虚拟补签卡</CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-56 w-full">
-                <AreaChart data={chartData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Area
-                    type="monotone"
-                    dataKey="hours"
-                    stroke="var(--color-hours)"
-                    fill="var(--color-hours)"
-                    fillOpacity={0.2}
-                  />
-                </AreaChart>
-              </ChartContainer>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>类型</TableHead>
+                    <TableHead>可用月份</TableHead>
+                    <TableHead className="text-right">数量</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {detail.signin.cards.map((card, index) => (
+                    <TableRow key={`${card.cardType}-${index}`}>
+                      <TableCell className="font-medium">
+                        {card.cardType}
+                      </TableCell>
+                      <TableCell>{card.cardMonth ?? "不限"}</TableCell>
+                      <TableCell className="text-right">
+                        {card.amount} 张
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>会话记录</CardTitle>
-              <CardDescription>最近登录会话，按登录时间倒序</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {sessions === null ? (
-                <Skeleton className="h-48 w-full" />
-              ) : sessions.items.length === 0 ? (
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyTitle>暂无会话记录</EmptyTitle>
-                    <EmptyDescription>
-                      该玩家还没有在线会话记录。
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              ) : (
-                <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>登录时间</TableHead>
-                        <TableHead>退出时间</TableHead>
-                        <TableHead className="text-right">时长</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sessions.items.map((session, index) => (
-                        <TableRow key={`${session.loginTime}-${index}`}>
-                          <TableCell>{formatDateTime(session.loginTime) || session.loginTime}</TableCell>
-                          <TableCell>
-                            {session.quitTime ? (
-                              formatDateTime(session.quitTime)
-                            ) : (
-                              <Badge variant="default">进行中</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatSeconds(session.seconds)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      共 {sessions.total} 条会话，第 {sessions.page} /{" "}
-                      {sessionTotalPages} 页
-                    </span>
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            aria-disabled={sessionPage <= 1}
-                            className={
-                              sessionPage <= 1
-                                ? "pointer-events-none opacity-50"
-                                : ""
-                            }
-                            onClick={() =>
-                              setSessionPage((prev) => Math.max(1, prev - 1))
-                            }
-                          />
-                        </PaginationItem>
-                        <PaginationItem>
-                          <PaginationNext
-                            aria-disabled={sessionPage >= sessionTotalPages}
-                            className={
-                              sessionPage >= sessionTotalPages
-                                ? "pointer-events-none opacity-50"
-                                : ""
-                            }
-                            onClick={() =>
-                              setSessionPage((prev) =>
-                                Math.min(sessionTotalPages, prev + 1),
-                              )
-                            }
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        )}
         </>
       )}
 

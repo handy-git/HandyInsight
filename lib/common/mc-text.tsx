@@ -316,7 +316,7 @@ function renderSegment(segment: string, key: number): ReactNode {
       const baseStyle = legacyPrefixStyle(prefix);
       const rendered = renderComponent(component, baseStyle, `mini-${key}`);
       if (rendered !== null) {
-        return rendered;
+        return <span key={`mini-${key}`}>{rendered}</span>;
       }
     }
     return <span key={`raw-${key}`}>{segment}</span>;

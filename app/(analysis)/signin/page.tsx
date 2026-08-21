@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AlertCircleIcon, CalendarXIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -37,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { playerAvatarUrl } from "@/lib/common/avatar";
 import { fetchJson } from "@/lib/common/format";
 import type {
   SignInOverview,
@@ -199,14 +201,27 @@ export default function SignInDashboardPage() {
                     <TableRow
                       key={item.uuid}
                       className="cursor-pointer"
-                      onClick={() => router.push(`/signin/players/${item.uuid}`)}
+                      onClick={() => router.push(`/players/${item.uuid}`)}
                     >
                       <TableCell>
                         <Badge variant={item.rank <= 3 ? "default" : "outline"}>
                           {item.rank}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>
+                        <span className="flex items-center gap-2">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={playerAvatarUrl(item.uuid, 32)}
+                              alt={item.name}
+                            />
+                            <AvatarFallback>
+                              {item.name.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{item.name}</span>
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">{item.time}</TableCell>
                     </TableRow>
                   ))}
@@ -248,14 +263,27 @@ export default function SignInDashboardPage() {
                     <TableRow
                       key={entry.uuid}
                       className="cursor-pointer"
-                      onClick={() => router.push(`/signin/players/${entry.uuid}`)}
+                      onClick={() => router.push(`/players/${entry.uuid}`)}
                     >
                       <TableCell>
                         <Badge variant={entry.rank <= 3 ? "default" : "outline"}>
                           {entry.rank}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{entry.name}</TableCell>
+                      <TableCell>
+                        <span className="flex items-center gap-2">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={playerAvatarUrl(entry.uuid, 32)}
+                              alt={entry.name}
+                            />
+                            <AvatarFallback>
+                              {entry.name.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{entry.name}</span>
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
                         {entry.signs} 次
                       </TableCell>

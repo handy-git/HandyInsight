@@ -48,7 +48,7 @@ const PLUGIN_NAV: Record<
     label: "PlayerTime · 时长",
     items: [
       { href: "/dashboard", label: "数据总览", icon: BarChart3Icon },
-      { href: "/players", label: "玩家列表", icon: UsersIcon },
+      { href: "/players", label: "玩家中心", icon: UsersIcon },
     ],
   },
   playersignin: {

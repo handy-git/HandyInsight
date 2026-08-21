@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircleIcon, SearchIcon, UsersIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
@@ -40,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { playerAvatarUrl } from "@/lib/common/avatar";
 import { fetchJson } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { SignInPlayerItem } from "@/lib/plugins/playersignin/types";
@@ -129,12 +131,25 @@ export default function SignInPlayersPage() {
               </TableHeader>
               <TableBody>
                 {data.items.map((player) => (
-                  <TableRow
-                    key={player.uuid}
-                    className="cursor-pointer"
-                    onClick={() => router.push(`/signin/players/${player.uuid}`)}
-                  >
-                    <TableCell className="font-medium">{player.name}</TableCell>
+                    <TableRow
+                      key={player.uuid}
+                      className="cursor-pointer"
+                      onClick={() => router.push(`/players/${player.uuid}`)}
+                    >
+                      <TableCell>
+                        <span className="flex items-center gap-2">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={playerAvatarUrl(player.uuid, 32)}
+                              alt={player.name}
+                            />
+                            <AvatarFallback>
+                              {player.name.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{player.name}</span>
+                        </span>
+                      </TableCell>
                     <TableCell className="text-right">
                       {player.totalSigns} 次
                     </TableCell>

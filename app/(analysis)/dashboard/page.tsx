@@ -7,6 +7,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AlertCircleIcon, UserXIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -38,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { playerAvatarUrl } from "@/lib/common/avatar";
 import { fetchJson, formatSeconds, secondsToHours } from "@/lib/common/format";
 import type {
   OnlinePlayer,
@@ -235,8 +237,19 @@ export default function DashboardPage() {
                       className="cursor-pointer"
                       onClick={() => router.push(`/players/${player.uuid}`)}
                     >
-                      <TableCell className="font-medium">
-                        {player.name}
+                      <TableCell>
+                        <span className="flex items-center gap-2">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={playerAvatarUrl(player.uuid, 32)}
+                              alt={player.name}
+                            />
+                            <AvatarFallback>
+                              {player.name.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{player.name}</span>
+                        </span>
                       </TableCell>
                       <TableCell>{player.loginTime}</TableCell>
                       <TableCell className="text-right">
@@ -291,7 +304,20 @@ export default function DashboardPage() {
                           {entry.rank}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{entry.name}</TableCell>
+                      <TableCell>
+                        <span className="flex items-center gap-2">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={playerAvatarUrl(entry.uuid, 32)}
+                              alt={entry.name}
+                            />
+                            <AvatarFallback>
+                              {entry.name.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{entry.name}</span>
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
                         {formatSeconds(entry.seconds)}
                       </TableCell>

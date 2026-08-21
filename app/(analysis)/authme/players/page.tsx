@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircleIcon, SearchIcon, UsersIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -41,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { playerAvatarUrl } from "@/lib/common/avatar";
 import { fetchJson } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { AuthmeAccountItem } from "@/lib/plugins/authme/types";
@@ -140,19 +142,30 @@ export default function AuthmePlayersPage() {
               </TableHeader>
               <TableBody>
                 {data.items.map((account) => (
-                  <TableRow
-                    key={account.username}
-                    className="cursor-pointer"
-                    onClick={() =>
-                      router.push(`/authme/players/${account.username}`)
-                    }
-                  >
-                    <TableCell className="font-medium">
-                      <span className="flex items-center gap-2">
-                        {account.realname}
-                        {account.logged && <Badge>在线</Badge>}
-                      </span>
-                    </TableCell>
+                    <TableRow
+                      key={account.username}
+                      className="cursor-pointer"
+                      onClick={() =>
+                        router.push(`/players/name:${account.username}`)
+                      }
+                    >
+                      <TableCell>
+                        <span className="flex items-center gap-2">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={playerAvatarUrl(account.username, 32)}
+                              alt={account.realname}
+                            />
+                            <AvatarFallback>
+                              {account.realname.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">
+                            {account.realname}
+                          </span>
+                          {account.logged && <Badge>在线</Badge>}
+                        </span>
+                      </TableCell>
                     <TableCell>{account.email ?? "—"}</TableCell>
                     <TableCell>{account.regDate ?? "—"}</TableCell>
                     <TableCell>{account.lastLoginAt ?? "从未登录"}</TableCell>

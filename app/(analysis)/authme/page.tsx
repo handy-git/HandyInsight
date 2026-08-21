@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AlertCircleIcon, UserXIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -37,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { playerAvatarUrl } from "@/lib/common/avatar";
 import { fetchJson } from "@/lib/common/format";
 import type {
   AuthmeOverview,
@@ -231,12 +233,21 @@ export default function AuthmeDashboardPage() {
                       key={login.username}
                       className="cursor-pointer"
                       onClick={() =>
-                        router.push(`/authme/players/${login.username}`)
+                        router.push(`/players/name:${login.username}`)
                       }
                     >
-                      <TableCell className="font-medium">
+                      <TableCell>
                         <span className="flex items-center gap-2">
-                          {login.realname}
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={playerAvatarUrl(login.username, 32)}
+                              alt={login.realname}
+                            />
+                            <AvatarFallback>
+                              {login.realname.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{login.realname}</span>
                           {login.logged && <Badge>在线</Badge>}
                         </span>
                       </TableCell>
@@ -285,13 +296,24 @@ export default function AuthmeDashboardPage() {
                       key={registration.username}
                       className="cursor-pointer"
                       onClick={() =>
-                        router.push(
-                          `/authme/players/${registration.username}`,
-                        )
+                        router.push(`/players/name:${registration.username}`)
                       }
                     >
-                      <TableCell className="font-medium">
-                        {registration.realname}
+                      <TableCell>
+                        <span className="flex items-center gap-2">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={playerAvatarUrl(registration.username, 32)}
+                              alt={registration.realname}
+                            />
+                            <AvatarFallback>
+                              {registration.realname.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">
+                            {registration.realname}
+                          </span>
+                        </span>
                       </TableCell>
                       <TableCell>{registration.regDate}</TableCell>
                       <TableCell className="text-right">

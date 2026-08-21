@@ -59,13 +59,17 @@ const cache: ServerCache = globalCache.__handyinsightServer ?? {
 };
 globalCache.__handyinsightServer = cache;
 
-/** 重建只读连接池（保存新配置后调用），同时失效插件探测缓存。 */
+/** 重建只读连接池（保存新配置后调用），同时失效插件探测与玩家目录缓存。 */
 export async function rebuildPool(): Promise<void> {
   if (cache.pool) {
     await cache.pool.end().catch(() => undefined);
   }
   cache.pool = null;
   cache.enabledPlugins = null;
+  const { invalidatePlayerRegistry } = await import(
+    "@/lib/server/player-registry"
+  );
+  invalidatePlayerRegistry();
   const config = await loadMysqlConfig();
   if (config) {
     cache.pool = mysql.createPool(toPoolOptions(config));

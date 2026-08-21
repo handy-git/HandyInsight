@@ -255,11 +255,6 @@ export default function UnifiedPlayerDetailPage({
               </span>
             </span>
           </CardTitle>
-          <CardDescription>
-            {detail.registeredAt
-              ? `注册于 ${formatDateTime(detail.registeredAt)}`
-              : "注册时间未知（未接入 AuthMe）"}
-          </CardDescription>
         </CardHeader>
       </Card>
 

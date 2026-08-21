@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -111,9 +110,6 @@ export default function UnifiedPlayersPage() {
     <Card>
       <CardHeader>
         <CardTitle>全服玩家</CardTitle>
-        <CardDescription>
-          全服玩家跨插件全景视图；接入 AuthMe 后可见注册但从未上线的玩家
-        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">

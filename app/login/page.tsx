@@ -45,15 +45,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <p className="font-heading text-base font-semibold">
                 HandyInsight
               </p>
-              <p className="font-mono text-xs text-muted-foreground">
-                MINECRAFT DATA CONSOLE
-              </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-5">
             <Badge variant="outline" className="w-fit">
-              READ-ONLY ANALYTICS
+              只读数据分析
             </Badge>
             <h1 className="max-w-xl text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-6xl">
               让服务器数据 清晰地说话

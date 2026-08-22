@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { loadMysqlConfig } from "@/lib/server/config";
+import {
+  isMysqlConfigEditable,
+  loadMysqlConfig,
+} from "@/lib/server/config";
 import { getEnabledPlugins, pingSavedConnection } from "@/lib/server/mysql";
 
 /** 配置状态：只返回非敏感信息（是否已配置、连接可用性、启用插件），绝不回传密码。 */
@@ -10,6 +13,7 @@ export async function GET() {
     return NextResponse.json({
       configured: false,
       connected: false,
+      editable: isMysqlConfigEditable(),
       plugins: [],
     });
   }
@@ -18,6 +22,7 @@ export async function GET() {
   return NextResponse.json({
     configured: true,
     connected,
+    editable: isMysqlConfigEditable(),
     database: config.database,
     plugins: plugins.map((plugin) => ({
       id: plugin.id,

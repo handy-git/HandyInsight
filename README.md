@@ -66,13 +66,17 @@ MYSQL_PORT=3306
 MYSQL_DATABASE=minecraft
 MYSQL_USER=handyinsight
 MYSQL_PASSWORD=your_password
+MYSQL_SSL=false
+MYSQL_SSL_VERIFY=true
 ```
 
-`MYSQL_PORT` 可省略，默认使用 `3306`；密码为空时可省略密码变量。数据库名不可省略，因为插件探测和数据查询都在指定数据库中执行。
+`MYSQL_PORT` 可省略，默认使用 `3306`；密码为空时可省略密码变量。`MYSQL_SSL` 启用 TLS，`MYSQL_SSL_VERIFY` 控制服务器证书验证；仅在目标使用自签名证书时将后者设为 `false`。数据库名不可省略，因为插件探测和数据查询都在指定数据库中执行。
 
-环境变量配置优先于页面保存的配置。只要存在上述任一 `MYSQL_*` 变量，应用就仅使用环境变量；若必填项不完整，则视为尚未配置，不会回退到旧配置文件。
+环境变量配置优先于页面保存的配置。只要存在上述任一 `MYSQL_*` 变量，应用就仅使用环境变量且配置页只允许测试连接；若必填项不完整，则视为尚未配置，不会回退到旧配置文件。
 
-未使用环境变量时，连接配置保存在服务端 `.data/mysql.json`（含明文密码），该目录已加入 `.gitignore`，绝不返回浏览器。项目仅供个人自用，请勿暴露到公网。
+本地使用 `pnpm dev` 且未设置环境变量时，连接配置保存在服务端 `.data/mysql.json`（含明文密码），该目录已加入 `.gitignore`，绝不返回浏览器。
+
+部署到 EdgeOne Makers 时，`cloud-functions/api/[[default]].js` 使用 Node.js Cloud Functions 承接同源 `/api/*` 请求，并通过 `context.env` 注入上述环境变量。云函数不会读写 `.data/mysql.json`，必须在 EdgeOne 控制台配置完整的 `MYSQL_*` 和 `AUTH_*` 变量。项目仅供个人自用，请勿暴露到公网。
 
 ## 登录配置
 
@@ -111,6 +115,8 @@ app/
     authme/              # AuthMe 只读分析接口
     companions/          # CompanionsPlus 只读分析接口
     playertitle/         # PlayerTitle 只读分析接口
+cloud-functions/
+  api/[[default]].js     # EdgeOne Node 云函数统一 API 适配器
 components/ui/           # 仅 shadcn CLI 生成的组件
 lib/
   common/                # 公共：插件注册表、格式化、类型、Zod 基础校验、主题、头像、玩家中心共享类型
@@ -120,5 +126,5 @@ lib/
     authme/              # AuthMe 模块：统计 SQL、类型、查询校验
     companions/          # CompanionsPlus 模块：统计 SQL、类型、查询校验
     playertitle/         # PlayerTitle 模块：统计 SQL、类型、查询校验
-  server/                # 服务端：配置读写、连接池、插件探测、玩家目录聚合、玩家中心查询、接口错误处理
+  server/                # 服务端：配置、运行时环境、连接池、插件探测、玩家目录聚合、玩家中心查询、接口错误处理
 ```

@@ -19,10 +19,20 @@ export function friendlyMysqlError(error: unknown): string {
       return "无法解析主机地址，请检查主机名是否正确";
     case "ER_ACCESS_DENIED_ERROR":
       return "用户名或密码错误，或该账号没有访问目标数据库的权限";
+    case "ER_DBACCESS_DENIED_ERROR":
+    case "ER_TABLEACCESS_DENIED_ERROR":
+      return "账号没有访问目标数据库或插件数据表的权限";
     case "ER_BAD_DB_ERROR":
       return "数据库不存在，请检查数据库名";
+    case "ER_SECURE_TRANSPORT_REQUIRED":
+      return "目标 MySQL 要求 SSL/TLS 连接，请启用 SSL 后重试";
     case "HANDSHAKE_NO_SSL_SUPPORT":
       return "目标 MySQL 不支持 SSL，请关闭 SSL 后重试";
+    case "HANDSHAKE_SSL_ERROR":
+    case "DEPTH_ZERO_SELF_SIGNED_CERT":
+    case "SELF_SIGNED_CERT_IN_CHAIN":
+    case "UNABLE_TO_VERIFY_LEAF_SIGNATURE":
+      return "SSL 证书校验失败；自签名证书可关闭证书验证后重试";
     default:
       return "连接失败，请检查连接信息后重试";
   }
@@ -35,7 +45,9 @@ function toPoolOptions(config: MysqlConfig): mysql.PoolOptions {
     database: config.database,
     user: config.user,
     password: config.password,
-    ssl: config.ssl ? {} : undefined,
+    ssl: config.ssl
+      ? { rejectUnauthorized: config.sslVerify }
+      : undefined,
     connectionLimit: 5,
     // 统一按 Asia/Shanghai 处理时间，日期以字符串传输避免时区歧义
     timezone: "+08:00",
@@ -153,6 +165,16 @@ export async function testConnection(config: MysqlConfig): Promise<TestResult> {
     }
     return { ok: true, plugins };
   } catch (error) {
+    const detail = error as NodeJS.ErrnoException & {
+      errno?: number;
+      sqlState?: string;
+    };
+    console.error("[mysql-test]", {
+      code: detail.code,
+      errno: detail.errno,
+      sqlState: detail.sqlState,
+      message: detail.message,
+    });
     return { ok: false, message: friendlyMysqlError(error) };
   } finally {
     if (connection) {

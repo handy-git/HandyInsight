@@ -12,6 +12,7 @@ export const mysqlConfigSchema = z.object({
   user: z.string().trim().min(1, "请填写用户名"),
   password: z.string().default(""),
   ssl: z.boolean().default(false),
+  sslVerify: z.boolean().default(true),
 });
 
 export type MysqlConfig = z.infer<typeof mysqlConfigSchema>;

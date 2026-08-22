@@ -1,5 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
+import { getRuntimeEnv } from "@/lib/server/runtime-env";
+
 export const AUTH_COOKIE_NAME = "handyinsight_session";
 export const AUTH_SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
@@ -9,8 +11,9 @@ interface AuthConfig {
 }
 
 function loadAuthConfig(): AuthConfig | null {
-  const username = process.env.AUTH_USERNAME?.trim();
-  const password = process.env.AUTH_PASSWORD;
+  const env = getRuntimeEnv();
+  const username = env.AUTH_USERNAME?.trim();
+  const password = env.AUTH_PASSWORD;
   if (!username || !password) {
     return null;
   }

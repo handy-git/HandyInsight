@@ -87,6 +87,7 @@ interface FormState {
   user: string;
   password: string;
   ssl: boolean;
+  sslVerify: boolean;
 }
 
 const INITIAL_FORM: FormState = {
@@ -96,6 +97,7 @@ const INITIAL_FORM: FormState = {
   user: "",
   password: "",
   ssl: false,
+  sslVerify: true,
 };
 
 type TestState =
@@ -124,6 +126,7 @@ export function SettingsDialog({
   const [test, setTest] = useState<TestState>({ status: "idle" });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [configEditable, setConfigEditable] = useState<boolean | null>(null);
   const theme = useSyncExternalStore(
     subscribeTheme,
     getThemeSnapshot,
@@ -144,26 +147,35 @@ export function SettingsDialog({
     }),
   );
 
-  // 设置弹窗打开时加载已启用插件列表
+  // 弹窗打开时同步配置来源；设置模式同时加载已启用插件列表
   useEffect(() => {
-    if (!open || mode !== "settings") return;
+    if (!open) return;
     let cancelled = false;
     fetch("/api/mysql/status")
       .then((response) => response.json())
       .then((status: {
         configured: boolean;
+        editable?: boolean;
         plugins?: { id: string; name: string; description: string }[];
       }) => {
         if (cancelled) return;
-        setEnabledPlugins(status.plugins ?? []);
+        setConfigEditable(status.editable ?? true);
+        if (mode === "settings") {
+          setEnabledPlugins(status.plugins ?? []);
+        }
       })
       .catch(() => {
-        if (!cancelled) setEnabledPlugins([]);
+        if (!cancelled) {
+          setConfigEditable(true);
+          if (mode === "settings") setEnabledPlugins([]);
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [open, mode]);
+
+  const configLocked = configEditable === false;
 
   // 展示顺序：注册表顺序 + 偏好排序（拖拽中覆盖）
   const sortedPlugins = useMemo(() => {
@@ -217,7 +229,9 @@ export function SettingsDialog({
       const response = await fetch("/api/mysql/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, port: Number(form.port) }),
+        body: configLocked
+          ? undefined
+          : JSON.stringify({ ...form, port: Number(form.port) }),
       });
       const data = (await response.json()) as {
         ok: boolean;
@@ -274,6 +288,7 @@ export function SettingsDialog({
               onChange={(event) => update("host", event.target.value)}
               placeholder="127.0.0.1"
               autoComplete="off"
+              disabled={configLocked}
             />
           </InputGroup>
         </Field>
@@ -286,6 +301,7 @@ export function SettingsDialog({
             max={65535}
             value={form.port}
             onChange={(event) => update("port", event.target.value)}
+            disabled={configLocked}
           />
         </Field>
         <Field className="sm:col-span-3">
@@ -300,6 +316,7 @@ export function SettingsDialog({
               onChange={(event) => update("database", event.target.value)}
               placeholder="playertime"
               autoComplete="off"
+              disabled={configLocked}
             />
           </InputGroup>
         </Field>
@@ -314,6 +331,7 @@ export function SettingsDialog({
               value={form.user}
               onChange={(event) => update("user", event.target.value)}
               autoComplete="off"
+              disabled={configLocked}
             />
           </InputGroup>
           <FieldDescription>
@@ -332,6 +350,7 @@ export function SettingsDialog({
               value={form.password}
               onChange={(event) => update("password", event.target.value)}
               autoComplete="new-password"
+              disabled={configLocked}
             />
           </InputGroup>
         </Field>
@@ -341,20 +360,48 @@ export function SettingsDialog({
           id="ssl"
           checked={form.ssl}
           onCheckedChange={(checked) => update("ssl", checked)}
+          disabled={configLocked}
         />
         <FieldLabel htmlFor="ssl">启用 SSL/TLS 连接</FieldLabel>
       </Field>
+      {form.ssl && (
+        <Field orientation="horizontal">
+          <Switch
+            id="sslVerify"
+            checked={form.sslVerify}
+            onCheckedChange={(checked) => update("sslVerify", checked)}
+            disabled={configLocked}
+          />
+          <div className="flex flex-col gap-1">
+            <FieldLabel htmlFor="sslVerify">验证服务器证书</FieldLabel>
+            <FieldDescription>
+              仅在目标使用自签名证书时关闭验证。
+            </FieldDescription>
+          </div>
+        </Field>
+      )}
     </FieldGroup>
   );
 
   const testAlerts = (
     <>
+      {configLocked && (
+        <Alert>
+          <DatabaseIcon />
+          <AlertTitle>环境变量托管</AlertTitle>
+          <AlertDescription>
+            数据库连接由服务端环境变量管理，此处只能测试当前配置。
+          </AlertDescription>
+        </Alert>
+      )}
       {test.status === "success" && (
         <Alert>
           <CheckCircle2Icon />
           <AlertTitle>连接成功</AlertTitle>
           <AlertDescription>
-            {test.plugins.length > 0
+            {configLocked
+              ? `当前环境变量配置可用，已检测到插件：${test.plugins.join("、")}`
+              : test.plugins.length > 0
               ? `已检测到插件：${test.plugins.join("、")}；保存后即可启用对应分析功能。`
               : "连接正常，可以保存配置。"}
           </AlertDescription>
@@ -385,12 +432,17 @@ export function SettingsDialog({
         disabled={test.status === "testing" || saving}
       >
         {test.status === "testing" && <Spinner data-icon="inline-start" />}
-        测试连接
+        {configLocked ? "测试当前连接" : "测试连接"}
       </Button>
-      <Button onClick={handleSave} disabled={test.status !== "success" || saving}>
-        {saving && <Spinner data-icon="inline-start" />}
-        保存并进入分析
-      </Button>
+      {!configLocked && (
+        <Button
+          onClick={handleSave}
+          disabled={test.status !== "success" || saving}
+        >
+          {saving && <Spinner data-icon="inline-start" />}
+          保存并进入分析
+        </Button>
+      )}
     </>
   );
 
@@ -418,7 +470,9 @@ export function SettingsDialog({
 
           <DialogFooter>
             <p className="mr-auto hidden text-xs text-muted-foreground sm:block">
-              先测试连接，通过后才能保存配置
+              {configLocked
+                ? "连接信息需在服务端环境变量中修改"
+                : "先测试连接，通过后才能保存配置"}
             </p>
             {actionButtons}
           </DialogFooter>
@@ -466,7 +520,9 @@ export function SettingsDialog({
                   {testAlerts}
                   <DialogFooter>
                     <p className="mr-auto hidden text-xs text-muted-foreground sm:block">
-                      先测试连接，通过后才能保存配置
+                      {configLocked
+                        ? "连接信息需在服务端环境变量中修改"
+                        : "先测试连接，通过后才能保存配置"}
                     </p>
                     {actionButtons}
                   </DialogFooter>

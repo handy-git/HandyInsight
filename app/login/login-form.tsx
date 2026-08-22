@@ -4,7 +4,6 @@ import { useActionState } from "react";
 import {
   ArrowRightIcon,
   LockKeyholeIcon,
-  ShieldCheckIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 
@@ -15,14 +14,12 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
@@ -44,9 +41,6 @@ export function LoginForm({ configured, redirectTo }: LoginFormProps) {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>登录控制台</CardTitle>
-        <CardDescription>
-          输入服务端配置的凭据以继续访问分析面板。
-        </CardDescription>
         <CardAction>
           <LockKeyholeIcon className="size-5 text-muted-foreground" />
         </CardAction>
@@ -86,9 +80,6 @@ export function LoginForm({ configured, redirectTo }: LoginFormProps) {
                 maxLength={512}
                 required
               />
-              <FieldDescription>
-                凭据只在当前服务器验证，不会发送给第三方。
-              </FieldDescription>
             </Field>
             {hasError ? (
               <Alert variant="destructive">
@@ -99,7 +90,7 @@ export function LoginForm({ configured, redirectTo }: LoginFormProps) {
             ) : null}
           </FieldGroup>
         </CardContent>
-        <CardFooter className="mt-5 flex-col gap-3">
+        <CardFooter className="mt-5">
           <Button
             type="submit"
             size="lg"
@@ -118,10 +109,6 @@ export function LoginForm({ configured, redirectTo }: LoginFormProps) {
               </>
             )}
           </Button>
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheckIcon className="size-3.5" />
-            安全会话将在 7 天后失效
-          </p>
         </CardFooter>
       </form>
     </Card>

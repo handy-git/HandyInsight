@@ -42,12 +42,12 @@ export async function login(
   });
   if (
     !parsed.success ||
-    !verifyCredentials(parsed.data.username, parsed.data.password)
+    !(await verifyCredentials(parsed.data.username, parsed.data.password))
   ) {
     return { status: "error", message: "账号或密码错误，请重新输入。" };
   }
 
-  const token = createSessionToken();
+  const token = await createSessionToken();
   if (!token) {
     return { status: "error", message: "登录配置不可用，请检查环境变量。" };
   }

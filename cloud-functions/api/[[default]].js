@@ -219,7 +219,7 @@ function apiPath(request) {
 export async function onRequest(context) {
   configureRuntimeEnv(context.env);
   const token = cookieValue(context.request, AUTH_COOKIE_NAME);
-  if (!verifySessionToken(token)) {
+  if (!(await verifySessionToken(token))) {
     return Response.json(
       { message: "未登录或登录已失效" },
       { status: 401 },

@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 
 import { AUTH_COOKIE_NAME, verifySessionToken } from "@/lib/server/auth";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  const authenticated = verifySessionToken(
+  const authenticated = await verifySessionToken(
     request.cookies.get(AUTH_COOKIE_NAME)?.value,
   );
 

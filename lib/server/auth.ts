@@ -1,5 +1,3 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-
 import { getRuntimeEnv } from "@/lib/server/runtime-env";
 
 export const AUTH_COOKIE_NAME = "handyinsight_session";
@@ -9,6 +7,8 @@ interface AuthConfig {
   username: string;
   password: string;
 }
+
+const textEncoder = new TextEncoder();
 
 function loadAuthConfig(): AuthConfig | null {
   const env = getRuntimeEnv();
@@ -20,45 +20,97 @@ function loadAuthConfig(): AuthConfig | null {
   return { username, password };
 }
 
-function safeEqual(value: string, expected: string): boolean {
-  const valueHash = createHash("sha256").update(value).digest();
-  const expectedHash = createHash("sha256").update(expected).digest();
-  return timingSafeEqual(valueHash, expectedHash);
+async function sha256(value: string): Promise<ArrayBuffer> {
+  return globalThis.crypto.subtle.digest("SHA-256", textEncoder.encode(value));
 }
 
-function signSession(config: AuthConfig, expiresAt: number): string {
-  const key = createHash("sha256")
-    .update(`handyinsight\0${config.username}\0${config.password}`)
-    .digest();
-  return createHmac("sha256", key)
-    .update(`${config.username}:${expiresAt}`)
-    .digest("base64url");
+function equalBytes(value: ArrayBuffer, expected: ArrayBuffer): boolean {
+  const valueBytes = new Uint8Array(value);
+  const expectedBytes = new Uint8Array(expected);
+  if (valueBytes.length !== expectedBytes.length) {
+    return false;
+  }
+  let difference = 0;
+  for (let index = 0; index < valueBytes.length; index += 1) {
+    difference |= valueBytes[index] ^ expectedBytes[index];
+  }
+  return difference === 0;
+}
+
+function base64Url(value: ArrayBuffer): string {
+  let binary = "";
+  for (const byte of new Uint8Array(value)) {
+    binary += String.fromCharCode(byte);
+  }
+  return globalThis
+    .btoa(binary)
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replace(/=+$/, "");
+}
+
+async function safeEqual(value: string, expected: string): Promise<boolean> {
+  const [valueHash, expectedHash] = await Promise.all([
+    sha256(value),
+    sha256(expected),
+  ]);
+  return equalBytes(valueHash, expectedHash);
+}
+
+async function signSession(
+  config: AuthConfig,
+  expiresAt: number,
+): Promise<string> {
+  // Web Crypto 同时兼容本地 Node.js 与 EdgeOne 的 Proxy 运行面。
+  const keyBytes = await sha256(
+    `handyinsight\0${config.username}\0${config.password}`,
+  );
+  const key = await globalThis.crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await globalThis.crypto.subtle.sign(
+    "HMAC",
+    key,
+    textEncoder.encode(`${config.username}:${expiresAt}`),
+  );
+  return base64Url(signature);
 }
 
 export function isAuthConfigured(): boolean {
   return loadAuthConfig() !== null;
 }
 
-export function verifyCredentials(username: string, password: string): boolean {
+export async function verifyCredentials(
+  username: string,
+  password: string,
+): Promise<boolean> {
   const config = loadAuthConfig();
   if (!config) {
     return false;
   }
-  return (
-    safeEqual(username, config.username) && safeEqual(password, config.password)
-  );
+  const [usernameMatches, passwordMatches] = await Promise.all([
+    safeEqual(username, config.username),
+    safeEqual(password, config.password),
+  ]);
+  return usernameMatches && passwordMatches;
 }
 
-export function createSessionToken(): string | null {
+export async function createSessionToken(): Promise<string | null> {
   const config = loadAuthConfig();
   if (!config) {
     return null;
   }
   const expiresAt = Math.floor(Date.now() / 1000) + AUTH_SESSION_MAX_AGE;
-  return `${expiresAt}.${signSession(config, expiresAt)}`;
+  return `${expiresAt}.${await signSession(config, expiresAt)}`;
 }
 
-export function verifySessionToken(token: string | undefined): boolean {
+export async function verifySessionToken(
+  token: string | undefined,
+): Promise<boolean> {
   const config = loadAuthConfig();
   if (!config || !token) {
     return false;
@@ -76,7 +128,7 @@ export function verifySessionToken(token: string | undefined): boolean {
   ) {
     return false;
   }
-  return safeEqual(signature, signSession(config, expiresAt));
+  return safeEqual(signature, await signSession(config, expiresAt));
 }
 
 export function normalizeRedirectPath(value: unknown): string {

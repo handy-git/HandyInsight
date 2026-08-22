@@ -46,3 +46,4 @@ next-env.d.ts
 
 # internal planning document
 /计划.md
+/.pnpm-store/

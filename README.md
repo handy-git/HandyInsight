@@ -56,9 +56,23 @@ pnpm start
 
 至少需要有一个插件的数据表齐全（如 PlayerTime 的 `player_time`、`player_time_record`）才能保存。推荐使用只授予目标库 `SELECT` 权限的独立只读账号。
 
-## 配置存储
+## MySQL 配置
 
-连接配置保存在服务端 `.data/mysql.json`（含明文密码），该目录已加入 `.gitignore`，绝不返回浏览器。项目仅供个人自用，请勿暴露到公网。
+可通过以下服务端环境变量配置 MySQL：
+
+```dotenv
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_DATABASE=minecraft
+MYSQL_USER=handyinsight
+MYSQL_PASSWORD=your_password
+```
+
+`MYSQL_PORT` 可省略，默认使用 `3306`；密码为空时可省略密码变量。数据库名不可省略，因为插件探测和数据查询都在指定数据库中执行。
+
+环境变量配置优先于页面保存的配置。只要存在上述任一 `MYSQL_*` 变量，应用就仅使用环境变量；若必填项不完整，则视为尚未配置，不会回退到旧配置文件。
+
+未使用环境变量时，连接配置保存在服务端 `.data/mysql.json`（含明文密码），该目录已加入 `.gitignore`，绝不返回浏览器。项目仅供个人自用，请勿暴露到公网。
 
 ## 常用命令
 

@@ -74,6 +74,17 @@ MYSQL_PASSWORD=your_password
 
 未使用环境变量时，连接配置保存在服务端 `.data/mysql.json`（含明文密码），该目录已加入 `.gitignore`，绝不返回浏览器。项目仅供个人自用，请勿暴露到公网。
 
+## 登录配置
+
+分析面板默认要求登录，账号和密码通过服务端环境变量配置：
+
+```dotenv
+AUTH_USERNAME=admin
+AUTH_PASSWORD=change_this_password
+```
+
+两项均为必填，修改后需要重启服务。登录成功后会创建 7 天有效的 HttpOnly 签名 Cookie；修改任一登录环境变量会立即使旧会话失效。生产环境请通过 HTTPS 访问，并使用足够强的密码。
+
 ## 常用命令
 
 ```bash

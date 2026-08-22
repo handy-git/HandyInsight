@@ -56,7 +56,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               READ-ONLY ANALYTICS
             </Badge>
             <h1 className="max-w-xl text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-6xl">
-              让服务器数据，清晰地说话。
+              让服务器数据 清晰地说话
             </h1>
             <p className="max-w-lg text-base leading-7 text-muted-foreground sm:text-lg">
               在一个安静、只读的空间里查看玩家活跃、签到、账户、宠物与称号数据。

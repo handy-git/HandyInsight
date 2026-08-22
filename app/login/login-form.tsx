@@ -90,15 +90,7 @@ export function LoginForm({ configured, redirectTo }: LoginFormProps) {
                 凭据只在当前服务器验证，不会发送给第三方。
               </FieldDescription>
             </Field>
-            {!configured ? (
-              <Alert variant="destructive">
-                <TriangleAlertIcon />
-                <AlertTitle>登录尚未配置</AlertTitle>
-                <AlertDescription>
-                  请设置 AUTH_USERNAME 和 AUTH_PASSWORD 后重启服务。
-                </AlertDescription>
-              </Alert>
-            ) : hasError ? (
+            {hasError ? (
               <Alert variant="destructive">
                 <TriangleAlertIcon />
                 <AlertTitle>无法登录</AlertTitle>

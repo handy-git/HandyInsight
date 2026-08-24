@@ -51,29 +51,30 @@ export async function getOverview(): Promise<PlayertimeOverview> {
     const dayStart = toSqlDateTime(startOfDay(now));
     const nowText = toSqlDateTime(now);
 
-    const onlineRows = await query<RowDataPacket[]>(
-      `SELECT COUNT(DISTINCT player_uuid) AS onlinePlayers
-         FROM player_time_record
-        WHERE quit_time IS NULL`,
-    );
-
-    const todayRows = await query<RowDataPacket[]>(
-      `SELECT COUNT(DISTINCT player_uuid) AS todayActivePlayers,
-              COALESCE(SUM(TIMESTAMPDIFF(SECOND,
-                GREATEST(login_time, ?),
-                LEAST(COALESCE(quit_time, NOW()), ?))), 0) AS todaySeconds
-         FROM player_time_record
-        WHERE login_time < ? AND (quit_time IS NULL OR quit_time > ?)`,
-      [dayStart, nowText, nowText, dayStart],
-    );
-
-    const avgRows = await query<RowDataPacket[]>(
-      `SELECT COALESCE(AVG(TIMESTAMPDIFF(SECOND, login_time, quit_time)), 0) AS averageSessionSeconds
-         FROM player_time_record
-        WHERE quit_time IS NOT NULL
-          AND quit_time > ? AND quit_time <= ?`,
-      [dayStart, nowText],
-    );
+    // 三条互不依赖的聚合并行执行，避免串行等待三次 RTT
+    const [onlineRows, todayRows, avgRows] = await Promise.all([
+      query<RowDataPacket[]>(
+        `SELECT COUNT(DISTINCT player_uuid) AS onlinePlayers
+           FROM player_time_record
+          WHERE quit_time IS NULL`,
+      ),
+      query<RowDataPacket[]>(
+        `SELECT COUNT(DISTINCT player_uuid) AS todayActivePlayers,
+                COALESCE(SUM(TIMESTAMPDIFF(SECOND,
+                  GREATEST(login_time, ?),
+                  LEAST(COALESCE(quit_time, NOW()), ?))), 0) AS todaySeconds
+           FROM player_time_record
+          WHERE login_time < ? AND (quit_time IS NULL OR quit_time > ?)`,
+        [dayStart, nowText, nowText, dayStart],
+      ),
+      query<RowDataPacket[]>(
+        `SELECT COALESCE(AVG(TIMESTAMPDIFF(SECOND, login_time, quit_time)), 0) AS averageSessionSeconds
+           FROM player_time_record
+          WHERE quit_time IS NOT NULL
+            AND quit_time > ? AND quit_time <= ?`,
+        [dayStart, nowText],
+      ),
+    ]);
 
     return {
       onlinePlayers: num(onlineRows[0]?.onlinePlayers),

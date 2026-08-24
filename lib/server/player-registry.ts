@@ -135,6 +135,15 @@ async function fetchPlayerCurrency(): Promise<RowDataPacket[]> {
   );
 }
 
+/** 插件已启用则执行查询，否则返回空数组，便于并行取数后统一合并。 */
+function fetchWhen(
+  enabled: Set<string>,
+  pluginId: string,
+  fetch: () => Promise<RowDataPacket[]>,
+): Promise<RowDataPacket[]> {
+  return enabled.has(pluginId) ? fetch() : Promise.resolve([]);
+}
+
 /** 构建玩家目录（uuid → 档案；AuthMe 独有玩家以虚拟键挂载）。 */
 export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   if (cache && cache.expiresAt > Date.now()) {
@@ -143,12 +152,34 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   const plugins = await getEnabledPlugins();
   const enabled = new Set(plugins.map((plugin) => plugin.id));
 
+  // 各插件查询并行发出（连接池上限内自行调度），全部返回后再按序合并，
+  // 冷缓存下目录构建耗时从 8 次串行 RTT 之和降为最慢一条查询的耗时
+  const [
+    playerTimeRows,
+    signInRows,
+    companionsRows,
+    titleRows,
+    taskRows,
+    warpRows,
+    currencyRows,
+    authmeRows,
+  ] = await Promise.all([
+    fetchWhen(enabled, "playertime", fetchPlayerTime),
+    fetchWhen(enabled, "playersignin", fetchPlayerSignIn),
+    fetchWhen(enabled, "companions", fetchCompanions),
+    fetchWhen(enabled, "playertitle", fetchPlayerTitle),
+    fetchWhen(enabled, "playertask", fetchPlayerTask),
+    fetchWhen(enabled, "playerwarp", fetchPlayerWarp),
+    fetchWhen(enabled, "playercurrency", fetchPlayerCurrency),
+    fetchWhen(enabled, "authme", fetchAuthme),
+  ]);
+
   // name → uuid 桥接表（来自有 UUID 的各插件）
   const nameToUuid = new Map<string, string>();
   const byUuid = new Map<string, RegistryEntry>();
 
   if (enabled.has("playertime")) {
-    for (const row of await fetchPlayerTime()) {
+    for (const row of playerTimeRows) {
       const uuid = String(row.uuid);
       const name = String(row.name);
       nameToUuid.set(normalizeName(name), uuid);
@@ -166,7 +197,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   }
 
   if (enabled.has("playersignin")) {
-    for (const row of await fetchPlayerSignIn()) {
+    for (const row of signInRows) {
       const uuid = String(row.uuid);
       const name = String(row.name);
       nameToUuid.set(normalizeName(name), uuid);
@@ -196,7 +227,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   }
 
   if (enabled.has("companions")) {
-    for (const row of await fetchCompanions()) {
+    for (const row of companionsRows) {
       const uuid = String(row.uuid);
       const name = row.name ? String(row.name) : uuid.slice(0, 8);
       nameToUuid.set(normalizeName(name), uuid);
@@ -217,7 +248,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   }
 
   if (enabled.has("playertitle")) {
-    for (const row of await fetchPlayerTitle()) {
+    for (const row of titleRows) {
       const uuid = String(row.uuid);
       const name = row.name ? String(row.name) : uuid.slice(0, 8);
       nameToUuid.set(normalizeName(name), uuid);
@@ -238,7 +269,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   }
 
   if (enabled.has("playertask")) {
-    for (const row of await fetchPlayerTask()) {
+    for (const row of taskRows) {
       const uuid = String(row.uuid);
       const name = row.name ? String(row.name) : uuid.slice(0, 8);
       nameToUuid.set(normalizeName(name), uuid);
@@ -268,7 +299,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   }
 
   if (enabled.has("playerwarp")) {
-    for (const row of await fetchPlayerWarp()) {
+    for (const row of warpRows) {
       const uuid = String(row.uuid);
       const name = row.name ? String(row.name) : uuid.slice(0, 8);
       nameToUuid.set(normalizeName(name), uuid);
@@ -298,7 +329,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   }
 
   if (enabled.has("playercurrency")) {
-    for (const row of await fetchPlayerCurrency()) {
+    for (const row of currencyRows) {
       const uuid = String(row.uuid);
       const name = row.name ? String(row.name) : uuid.slice(0, 8);
       nameToUuid.set(normalizeName(name), uuid);
@@ -328,7 +359,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   }
 
   if (enabled.has("authme")) {
-    for (const row of await fetchAuthme()) {
+    for (const row of authmeRows) {
       const username = String(row.username);
       const realname = String(row.realname);
       const bridge = nameToUuid.get(normalizeName(realname));

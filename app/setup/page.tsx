@@ -17,7 +17,7 @@ export default function SetupPage() {
       <SettingsDialog
         open
         onOpenChange={() => undefined}
-        onSaved={() => router.push("/dashboard")}
+        onSaved={() => router.push("/overview/players")}
         showCloseButton={false}
         mode="setup"
       />

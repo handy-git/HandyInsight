@@ -140,9 +140,7 @@ export default function AnalysisLayout({
             <SidebarMenuItem>
               <SidebarMenuButton
                 size="lg"
-                render={
-                  <Link href={plugins?.[0]?.landing ?? "/dashboard"} />
-                }
+                render={<Link href="/overview/players" />}
               >
                 <span className="font-semibold">HandyInsight</span>
               </SidebarMenuButton>

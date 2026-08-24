@@ -7,7 +7,6 @@ import { Spinner } from "@/components/ui/spinner";
 
 interface MysqlStatus {
   configured: boolean;
-  plugins?: { landing: string }[];
 }
 
 export default function Home() {
@@ -29,11 +28,7 @@ export default function Home() {
         }
         const status = (await response.json()) as MysqlStatus;
         if (cancelled) return;
-        router.replace(
-          status.configured
-            ? (status.plugins?.[0]?.landing ?? "/dashboard")
-            : "/setup",
-        );
+        router.replace(status.configured ? "/overview/players" : "/setup");
       } catch {
         if (!cancelled) router.replace("/setup");
       }

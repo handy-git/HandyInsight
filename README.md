@@ -2,6 +2,8 @@
 
 一个面向 Minecraft 服务器管理者的插件数据分析面板。
 
+![HandyInsight Logo](public/logo.png)
+
 连接服务器的 MySQL 数据库后，可以在浏览器中查看玩家活跃、在线时长、签到、宠物、称号等数据。HandyInsight 只读取数据，不会修改游戏数据库。
 
 ![全服玩家列表](docs/screenshots/全服玩家列表.webp)

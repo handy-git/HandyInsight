@@ -1,130 +1,114 @@
 # HandyInsight
 
-Minecraft 插件 MySQL 数据的只读分析面板，采用可插拔模块架构。
+一个面向 Minecraft 服务器管理者的插件数据分析面板。
 
-## 已支持插件
+连接服务器的 MySQL 数据库后，可以在浏览器中查看玩家活跃、在线时长、签到、宠物、称号等数据。HandyInsight 只读取数据，不会修改游戏数据库。
 
-| 插件 | 数据表 | 功能 |
-| --- | --- | --- |
-| PlayerTime | `player_time`、`player_time_record` | 在线时长总览、趋势、排行、玩家列表与详情 |
-| PlayerSignIn | `player_sign_in`、`player_sign_card` | 签到总览、签到趋势、今日名单、累计排行、签到玩家与详情（签到日历、补签卡、记录） |
-| AuthMe | `authme` | 账户总览（注册/登录/活跃统计、注册趋势、最近登录与注册）、账户列表（IP、最后位置）、账户详情 |
-| CompanionsPlus | `companions_active`、`companions_coin`、`companions_equipment`、`companions_owned` | 宠物总览（拥有玩家/出战数/宠物总量/货币总量、热门宠物榜、装备使用榜）、宠物玩家列表（宠物数/等级/货币）、玩家宠物详情（宠物清单、装备分配） |
-| PlayerTitle | `title_list`、`title_player`、`title_coin` | 称号总览（称号数/持有与佩戴玩家/称号币总量、热门称号榜、称号币榜）、称号库（价格/时长/粒子/属性/上下架）、称号玩家列表与详情（佩戴、到期管理） |
+![全服玩家列表](docs/screenshots/全服玩家列表.webp)
 
-连接数据库时会按 `lib/common/plugins.ts` 中的插件注册表探测数据表，表齐全才启用对应模块；缺失的模块不会出现在导航中，接口直接返回 404。新增插件只需在注册表登记并实现 `lib/plugins/<插件id>/` 包。
+## 可以查看什么
 
-## 功能
+- **全服玩家**：集中搜索玩家，查看注册时间、在线时长、签到次数、宠物和最近活跃时间。
+- **在线时长**：查看当前在线、今日活跃、在线趋势和玩家排行。
+- **每日签到**：查看签到趋势、今日名单、累计排行和补签卡数量。
+- **登录账户**：查看注册、登录和近期活跃情况。
+- **宠物数据**：查看宠物数量、出战情况、热门宠物和玩家排行。
+- **称号数据**：查看热门称号、称号库、玩家佩戴情况和称号币排行。
 
-- 首次进入配置 MySQL 连接，测试通过后保存并进入分析
-- **总览 · 全服玩家**：跨插件统一玩家列表（注册时间、数据来源、总时长、签到、最近活跃，支持排序）与聚合详情（头像、汇总卡、活动时间线、分插件区块）；接入 AuthMe 后可见注册但从未上线的玩家
-- PlayerTime：当前在线、今日活跃、累计时长、平均会话、7/30 天趋势、排行、独立玩家列表与详情
-- PlayerSignIn：今日签到、累计签到、签到日历、连续签到、补签卡库存、独立签到玩家与详情
-- AuthMe：注册与登录统计、近期活跃、注册趋势、最近登录/注册名单、独立账户列表与详情
-- CompanionsPlus：宠物总览、热门宠物与装备排行、宠物玩家列表与详情
-- PlayerTitle：称号总览、称号库、热门称号与称号币排行、玩家称号与到期管理
-- 玩家头像：由 mc-heads.net 提供（按玩家名拉取皮肤，查不到自动回退默认头像；离线服 UUID 无法解析故不使用）
-- Minecraft 富文本：称号等游戏内文本正确解析颜色——MiniMessage（`<red>`、`<gradient>`、`<rainbow>` 等，基于 minimessage-js）与 legacy 代码（`&a`/`§a`）双格式支持
-- 外观设置：跟随系统 / 浅色 / 深色（侧边栏「设置」弹窗内）
+系统会根据数据库中已有的数据表自动显示可用功能，没有安装的插件不会出现在菜单中。
 
-## 技术栈
+## 界面预览
 
-- Next.js 16 App Router + TypeScript 严格模式，pnpm 包管理，Node.js 自托管
-- UI 仅使用 shadcn/ui（nova preset，Base UI + lucide 图标）
-- MySQL 使用 `mysql2/promise` 连接池（最大 5 连接），全部参数化查询
-- 校验用 Zod，日期用 date-fns，时区统一 Asia/Shanghai
+### 在线时长与签到
+
+通过趋势图和排行快速了解服务器活跃情况。
+
+| 在线时长                                            | 每日签到                                    |
+|-----------------------------------------------------|---------------------------------------------|
+| ![在线时长总览](docs/screenshots/在线时长总览.webp) | ![签到总览](docs/screenshots/签到总览.webp) |
+
+### 宠物与称号
+
+查看玩家宠物、热门称号以及游戏内富文本颜色效果。
+
+| 宠物数据                                    | 称号数据                                    |
+|---------------------------------------------|---------------------------------------------|
+| ![宠物总览](docs/screenshots/宠物总览.webp) | ![称号总览](docs/screenshots/称号总览.webp) |
+
+### 称号库
+
+称号名称、价格、有效期、粒子、属性和上下架状态一目了然。
+
+![称号库](docs/screenshots/称号库.webp)
+
+## 支持的插件
+
+| 插件           | 可查看内容                             |
+|----------------|----------------------------------------|
+| PlayerTime     | 在线人数、在线趋势、时长排行、玩家记录 |
+| PlayerSignIn   | 签到趋势、签到排行、签到日历、补签卡   |
+| AuthMe         | 注册与登录统计、活跃账户、账户详情     |
+| CompanionsPlus | 宠物排行、宠物等级、出战状态、装备使用 |
+| PlayerTitle    | 热门称号、称号库、佩戴状态、称号币     |
 
 ## 快速开始
 
+准备好 Node.js、pnpm 和一个可访问的 MySQL 数据库，然后运行：
+
 ```bash
-# 安装依赖
 pnpm install
-
-# 开发模式
 pnpm dev
-
-# 生产构建与运行
-pnpm build
-pnpm start
 ```
 
-打开 <http://localhost:3000>，首次会自动进入 `/setup` 配置页：
+打开 <http://localhost:3000>，按页面提示完成设置：
 
-1. 填写 MySQL 主机、端口、数据库名、用户名和密码
-2. 点击「测试连接」，系统会探测已支持插件的数据表并列出检测到的插件
-3. 点击「保存并进入分析」
+1. 使用环境变量设置登录账号和密码。
+2. 填写 MySQL 地址、端口、数据库名、用户名和密码。
+3. 测试连接，确认检测到至少一个支持的插件。
+4. 保存配置并进入分析面板。
 
-至少需要有一个插件的数据表齐全（如 PlayerTime 的 `player_time`、`player_time_record`）才能保存。推荐使用只授予目标库 `SELECT` 权限的独立只读账号。
+建议为 HandyInsight 创建只有 `SELECT` 权限的独立数据库账号。
 
-## MySQL 配置
+## 登录设置
 
-可通过以下服务端环境变量配置 MySQL：
+在启动应用前设置管理面板的登录账号：
+
+```dotenv
+AUTH_USERNAME=admin
+AUTH_PASSWORD=请替换为强密码
+```
+
+登录状态有效期为 7 天。修改账号或密码并重启应用后，旧登录状态会自动失效。
+
+## MySQL 设置
+
+本地运行时可以直接在设置页面保存 MySQL 配置。配置保存在服务器本地的 `.data/mysql.json` 中，不会返回浏览器，也不会提交到
+Git。
+
+部署时也可以使用环境变量：
 
 ```dotenv
 MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
 MYSQL_DATABASE=minecraft
 MYSQL_USER=handyinsight
-MYSQL_PASSWORD=your_password
+MYSQL_PASSWORD=请替换为数据库密码
 MYSQL_SSL=false
 MYSQL_SSL_VERIFY=true
 ```
 
-`MYSQL_PORT` 可省略，默认使用 `3306`；密码为空时可省略密码变量。`MYSQL_SSL` 启用 TLS，`MYSQL_SSL_VERIFY` 控制服务器证书验证；仅在目标使用自签名证书时将后者设为 `false`。数据库名不可省略，因为插件探测和数据查询都在指定数据库中执行。
+只要设置了任意 `MYSQL_*` 变量，应用就会优先使用环境变量。启用 TLS 时将 `MYSQL_SSL` 设为 `true`；只有使用自签名证书时，才建议关闭
+`MYSQL_SSL_VERIFY`。
 
-环境变量配置优先于页面保存的配置。只要存在上述任一 `MYSQL_*` 变量，应用就仅使用环境变量且配置页只允许测试连接；若必填项不完整，则视为尚未配置，不会回退到旧配置文件。
+## 使用提醒
 
-本地使用 `pnpm dev` 且未设置环境变量时，连接配置保存在服务端 `.data/mysql.json`（含明文密码），该目录已加入 `.gitignore`，绝不返回浏览器。
+- HandyInsight 设计为个人管理工具，请勿在没有登录保护的情况下暴露到公网。
+- 生产环境建议使用 HTTPS，并设置强登录密码。
+- 玩家头像由 [mc-heads.net](https://mc-heads.net/) 提供，无法查询时会显示默认头像。
+- 页面支持浅色、深色和跟随系统三种外观。
 
-部署到 EdgeOne Makers 时，`cloud-functions/api/[[default]].js` 使用 Node.js Cloud Functions 承接同源 `/api/*` 请求，并通过 `context.env` 注入上述环境变量。云函数不会读写 `.data/mysql.json`，必须在 EdgeOne 控制台配置完整的 `MYSQL_*` 和 `AUTH_*` 变量。项目仅供个人自用，请勿暴露到公网。
+## 技术信息
 
-## 登录配置
+HandyInsight 使用 Next.js、TypeScript、shadcn/ui 和 MySQL 构建，支持 Node.js 自托管与 EdgeOne Makers 部署。
 
-分析面板默认要求登录，账号和密码通过服务端环境变量配置：
-
-```dotenv
-AUTH_USERNAME=admin
-AUTH_PASSWORD=change_this_password
-```
-
-两项均为必填，修改后需要重启服务。登录成功后会创建 7 天有效的 HttpOnly 签名 Cookie；修改任一登录环境变量会立即使旧会话失效。生产环境请通过 HTTPS 访问，并使用足够强的密码。
-
-## 常用命令
-
-```bash
-pnpm exec tsc --noEmit   # 类型检查
-pnpm lint                # 代码检查
-```
-
-## 目录结构
-
-```text
-app/
-  setup/                 # MySQL 配置页与设置弹窗
-  (analysis)/            # 带 Sidebar 的分析页面组
-    dashboard/           # PlayerTime 数据总览
-    players/             # PlayerTime 玩家列表与详情
-    signin/              # PlayerSignIn 签到总览、玩家与详情
-    authme/              # AuthMe 账户总览、列表与详情
-    companions/          # CompanionsPlus 宠物总览、玩家与详情
-    title/               # PlayerTitle 称号总览、称号库、玩家与详情
-  api/
-    mysql/               # status / test / config 配置链路
-    playertime/          # PlayerTime 只读分析接口
-    playersignin/        # PlayerSignIn 只读分析接口
-    authme/              # AuthMe 只读分析接口
-    companions/          # CompanionsPlus 只读分析接口
-    playertitle/         # PlayerTitle 只读分析接口
-cloud-functions/
-  api/[[default]].js     # EdgeOne Node 云函数统一 API 适配器
-components/ui/           # 仅 shadcn CLI 生成的组件
-lib/
-  common/                # 公共：插件注册表、格式化、类型、Zod 基础校验、主题、头像、玩家中心共享类型
-  plugins/
-    playertime/          # PlayerTime 模块：统计 SQL、类型、查询校验
-    playersignin/        # PlayerSignIn 模块：统计 SQL、类型、查询校验
-    authme/              # AuthMe 模块：统计 SQL、类型、查询校验
-    companions/          # CompanionsPlus 模块：统计 SQL、类型、查询校验
-    playertitle/         # PlayerTitle 模块：统计 SQL、类型、查询校验
-  server/                # 服务端：配置、运行时环境、连接池、插件探测、玩家目录聚合、玩家中心查询、接口错误处理
-```
+项目采用可插拔结构，欢迎通过 Issue 或 Pull Request 提交新的插件支持。

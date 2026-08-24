@@ -135,6 +135,16 @@ async function fetchPlayerCurrency(): Promise<RowDataPacket[]> {
   );
 }
 
+async function fetchPlayerIntensify(): Promise<RowDataPacket[]> {
+  // 强化表没有时间列，只提供来源与名称
+  return query<RowDataPacket[]>(
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name
+       FROM player_intensify
+      WHERE player_uuid IS NOT NULL
+      GROUP BY player_uuid`,
+  );
+}
+
 /** 插件已启用则执行查询，否则返回空数组，便于并行取数后统一合并。 */
 function fetchWhen(
   enabled: Set<string>,
@@ -162,6 +172,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
     taskRows,
     warpRows,
     currencyRows,
+    intensifyRows,
     authmeRows,
   ] = await Promise.all([
     fetchWhen(enabled, "playertime", fetchPlayerTime),
@@ -171,6 +182,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
     fetchWhen(enabled, "playertask", fetchPlayerTask),
     fetchWhen(enabled, "playerwarp", fetchPlayerWarp),
     fetchWhen(enabled, "playercurrency", fetchPlayerCurrency),
+    fetchWhen(enabled, "playerintensify", fetchPlayerIntensify),
     fetchWhen(enabled, "authme", fetchAuthme),
   ]);
 
@@ -353,6 +365,27 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           lastActiveAt: row.lastActiveAt
             ? formatDateTime(String(row.lastActiveAt))
             : null,
+        });
+      }
+    }
+  }
+
+  if (enabled.has("playerintensify")) {
+    for (const row of intensifyRows) {
+      const uuid = String(row.uuid);
+      const name = row.name ? String(row.name) : uuid.slice(0, 8);
+      nameToUuid.set(normalizeName(name), uuid);
+      const existing = byUuid.get(uuid);
+      if (existing) {
+        existing.sources.push("playerintensify");
+      } else {
+        byUuid.set(uuid, {
+          key: uuid,
+          uuid,
+          name,
+          registeredAt: null,
+          sources: ["playerintensify"],
+          lastActiveAt: null,
         });
       }
     }

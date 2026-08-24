@@ -15,6 +15,7 @@ import {
   ClipboardListIcon,
   ClockIcon,
   CoinsIcon,
+  HammerIcon,
   LogInIcon,
   MapPinIcon,
   MedalIcon,
@@ -258,7 +259,8 @@ export default function UnifiedPlayerDetailPage({
             detail.authme ||
             detail.task ||
             detail.playerwarp ||
-            detail.playercurrency) && (
+            detail.playercurrency ||
+            detail.intensify) && (
             <div className="mt-4 flex flex-wrap gap-2.5">
               {detail.authme && (
                 <StatTile
@@ -329,6 +331,14 @@ export default function UnifiedPlayerDetailPage({
                     detail.companions.activeCompanion &&
                     `出战 ${detail.companions.activeCompanion}`
                   }
+                />
+              )}
+              {detail.intensify && (
+                <StatTile
+                  icon={HammerIcon}
+                  label="强化"
+                  value={`${detail.intensify.totalAttempts} 次`}
+                  hint={`成功率 ${detail.intensify.successRate ?? "—"}% · 最高 +${detail.intensify.maxLevel}`}
                 />
               )}
             </div>
@@ -930,6 +940,57 @@ export default function UnifiedPlayerDetailPage({
                     >
                       {card.value}
                     </CardTitle>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {detail.intensify && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HammerIcon className="size-4 text-muted-foreground" />
+              强化 · PlayerIntensify
+            </CardTitle>
+            <CardDescription>
+              成功率 {detail.intensify.successRate ?? "—"}% · 最高等级 +
+              {detail.intensify.maxLevel}
+              {detail.intensify.maxLevelName && (
+                <>
+                  {" "}
+                  · 装备 <McText text={detail.intensify.maxLevelName} />
+                </>
+              )}
+              {detail.intensify.materialName &&
+                `（${detail.intensify.materialName}）`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  title: "强化总次数",
+                  value: `${detail.intensify.totalAttempts} 次`,
+                },
+                {
+                  title: "成功次数",
+                  value: `${detail.intensify.succeedNum} 次`,
+                },
+                {
+                  title: "掉级次数",
+                  value: `${detail.intensify.levelOffNum} 次`,
+                },
+                {
+                  title: "消失次数",
+                  value: `${detail.intensify.vanishNum} 次`,
+                },
+              ].map((card) => (
+                <Card key={card.title}>
+                  <CardHeader>
+                    <CardDescription>{card.title}</CardDescription>
+                    <CardTitle className="text-2xl">{card.value}</CardTitle>
                   </CardHeader>
                 </Card>
               ))}

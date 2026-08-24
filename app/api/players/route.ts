@@ -8,7 +8,9 @@ import { getPool } from "@/lib/server/mysql";
 const querySchema = z.object({
   keyword: z.string().trim().max(64).default(""),
   page: z.coerce.number().int().min(1).default(1),
-  sort: z.enum(["recent", "registered", "playtime", "signin"]).default("recent"),
+  sort: z
+    .enum(["recent", "registered", "playtime", "signin", "intensify"])
+    .default("recent"),
 });
 
 export async function GET(request: Request) {

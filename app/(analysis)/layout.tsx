@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   ClipboardListIcon,
   CoinsIcon,
+  HammerIcon,
   LayoutDashboardIcon,
   MapPinIcon,
   MedalIcon,
@@ -122,6 +123,13 @@ const PLUGIN_NAV: Record<
       { href: "/currency", label: "货币总览", icon: CoinsIcon },
       { href: "/currency/logs", label: "货币流水", icon: CoinsIcon },
       { href: "/currency/players", label: "货币玩家", icon: UsersIcon },
+    ],
+  },
+  playerintensify: {
+    label: "PlayerIntensify · 强化",
+    items: [
+      { href: "/intensify", label: "强化总览", icon: HammerIcon },
+      { href: "/intensify/players", label: "强化玩家", icon: UsersIcon },
     ],
   },
 };

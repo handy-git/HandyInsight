@@ -79,6 +79,13 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     tables: ["player_currency", "player_currency_log"],
     landing: "/currency",
   },
+  {
+    id: "playerintensify",
+    name: "PlayerIntensify",
+    description: "装备强化",
+    tables: ["player_intensify"],
+    landing: "/intensify",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

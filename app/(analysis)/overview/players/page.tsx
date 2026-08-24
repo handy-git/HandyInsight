@@ -57,6 +57,7 @@ const SORT_OPTIONS = [
   { value: "registered", label: "注册时间" },
   { value: "playtime", label: "在线时长" },
   { value: "signin", label: "签到次数" },
+  { value: "intensify", label: "强化次数" },
 ] as const;
 
 function relativeTime(dateTime: string | null): string {
@@ -181,6 +182,7 @@ export default function UnifiedPlayersPage() {
                   <TableHead className="text-right">宠物币</TableHead>
                   <TableHead className="text-right">称号币</TableHead>
                   <TableHead className="text-right">任务币</TableHead>
+                  <TableHead className="text-right">强化</TableHead>
                   <TableHead className="text-right">最近活跃</TableHead>
                 </TableRow>
               </TableHeader>
@@ -232,6 +234,11 @@ export default function UnifiedPlayersPage() {
                       {player.taskCoins === null
                         ? "—"
                         : formatNumber(player.taskCoins)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {player.intensifyAttempts > 0
+                        ? `${player.intensifyAttempts} 次`
+                        : "—"}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {relativeTime(player.lastActiveAt)}

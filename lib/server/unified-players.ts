@@ -22,6 +22,7 @@ import { getTitlePlayerSummary } from "@/lib/plugins/playertitle/queries";
 import { getTaskPlayerSummary } from "@/lib/plugins/playertask/queries";
 import { getWarpPlayerSummary } from "@/lib/plugins/playerwarp/queries";
 import { getCurrencyPlayerSummary } from "@/lib/plugins/playercurrency/queries";
+import { getIntensifyPlayerDetail } from "@/lib/plugins/playerintensify/queries";
 import { createCache } from "@/lib/server/cache";
 import {
   buildPlayerRegistry,
@@ -71,6 +72,7 @@ interface PlayerStatsSnapshot {
   taskCoins: ReadonlyMap<string, number>;
   warpCounts: ReadonlyMap<string, number>;
   currencyTypes: ReadonlyMap<string, number>;
+  intensifyAttempts: ReadonlyMap<string, number>;
 }
 
 /* ---------- 统计源注册表：接入玩家列表 ---------- */
@@ -211,6 +213,19 @@ const STAT_SOURCES: readonly StatSource[] = [
       return { currencyTypes };
     },
   },
+  {
+    pluginId: "playerintensify",
+    load: async () => {
+      const intensifyAttempts = new Map<string, number>();
+      const rows = await query<RowDataPacket[]>(
+        "SELECT player_uuid AS uuid, `sum` AS attempts FROM player_intensify",
+      );
+      for (const row of rows) {
+        intensifyAttempts.set(String(row.uuid), num(row.attempts));
+      }
+      return { intensifyAttempts };
+    },
+  },
 ];
 
 /** 空快照：所有统计键的缺省容器，供未启用 / 装载失败的源保持空值。 */
@@ -226,6 +241,7 @@ function emptyStats(registry: RegistryEntry[]): PlayerStatsSnapshot {
     taskCoins: new Map(),
     warpCounts: new Map(),
     currencyTypes: new Map(),
+    intensifyAttempts: new Map(),
   };
 }
 
@@ -302,6 +318,7 @@ export async function getUnifiedPlayers(
       taskCoins: uuid ? (stats.taskCoins.get(uuid) ?? null) : null,
       warpCount: uuid ? (stats.warpCounts.get(uuid) ?? 0) : 0,
       currencyTypes: uuid ? (stats.currencyTypes.get(uuid) ?? 0) : 0,
+      intensifyAttempts: uuid ? (stats.intensifyAttempts.get(uuid) ?? 0) : 0,
     };
   });
 
@@ -313,6 +330,11 @@ export async function getUnifiedPlayers(
         return b.totalSeconds - a.totalSeconds || a.name.localeCompare(b.name);
       case "signin":
         return b.totalSigns - a.totalSigns || a.name.localeCompare(b.name);
+      case "intensify":
+        return (
+          b.intensifyAttempts - a.intensifyAttempts ||
+          a.name.localeCompare(b.name)
+        );
       case "recent":
       default:
         return (
@@ -481,6 +503,25 @@ const DETAIL_SOURCES: readonly DetailSource[] = [
       }
     },
   },
+  {
+    pluginId: "playerintensify",
+    collect: async ({ uuid, detail }) => {
+      const record = await getIntensifyPlayerDetail(uuid);
+      if (record) {
+        detail.intensify = {
+          totalAttempts: record.totalAttempts,
+          succeedNum: record.succeedNum,
+          failureNum: record.failureNum,
+          levelOffNum: record.levelOffNum,
+          vanishNum: record.vanishNum,
+          successRate: record.successRate,
+          maxLevel: record.maxLevel,
+          maxLevelName: record.maxLevelName,
+          materialName: record.materialName,
+        };
+      }
+    },
+  },
 ];
 
 /** 统一玩家详情（30 秒缓存）：并行编排各插件已有查询。 */
@@ -514,6 +555,7 @@ async function loadUnifiedPlayerDetail(
     task: null,
     playerwarp: null,
     playercurrency: null,
+    intensify: null,
   };
 
   const active = DETAIL_SOURCES.filter(

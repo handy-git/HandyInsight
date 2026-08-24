@@ -1,6 +1,11 @@
 /** 玩家中心的共享类型（客户端页面与服务端查询共用）。 */
 
-export type PlayerSortKey = "recent" | "registered" | "playtime" | "signin";
+export type PlayerSortKey =
+  | "recent"
+  | "registered"
+  | "playtime"
+  | "signin"
+  | "intensify";
 
 export interface UnifiedPlayerItem {
   key: string;
@@ -24,6 +29,8 @@ export interface UnifiedPlayerItem {
   warpCount: number;
   /** 持有货币类型数（PlayerCurrency） */
   currencyTypes: number;
+  /** 强化总次数（PlayerIntensify） */
+  intensifyAttempts: number;
 }
 
 export interface UnifiedPlayerDetail {
@@ -110,6 +117,26 @@ export interface UnifiedPlayerDetail {
     topBalance: number;
     /** 最近货币变动时间 */
     lastChangeAt: string | null;
+  } | null;
+  intensify: {
+    /** 强化总次数 */
+    totalAttempts: number;
+    /** 成功次数 */
+    succeedNum: number;
+    /** 失败次数 */
+    failureNum: number;
+    /** 掉级次数 */
+    levelOffNum: number;
+    /** 消失次数 */
+    vanishNum: number;
+    /** 成功率（%，保留 1 位小数），无强化记录为 null */
+    successRate: number | null;
+    /** 最高等级 */
+    maxLevel: number;
+    /** 最高等级装备名称（含 Minecraft 颜色代码） */
+    maxLevelName: string | null;
+    /** 最高装备材质名字 */
+    materialName: string | null;
   } | null;
 }
 

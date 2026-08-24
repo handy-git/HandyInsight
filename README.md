@@ -120,3 +120,7 @@ MYSQL_PASSWORD=123456
 HandyInsight 使用 Next.js、TypeScript、shadcn/ui 和 MySQL 构建，支持 Node.js 自托管与 EdgeOne Makers 部署。
 
 项目采用可插拔结构，欢迎通过 Issue 或 Pull Request 提交新的插件支持。
+
+## 支持项目
+
+如果 HandyInsight 对你的服务器有帮助，欢迎到 [GitHub](https://github.com/handy-git/HandyInsight) 点一个 Star，也欢迎在 Issue 里告诉我们你使用的插件和需求，帮助项目持续改进。

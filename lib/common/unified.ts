@@ -20,6 +20,8 @@ export interface UnifiedPlayerItem {
   titleCoins: number | null;
   /** 任务币（PlayerTask） */
   taskCoins: number | null;
+  /** 创建地标数（PlayerWarp） */
+  warpCount: number;
 }
 
 export interface UnifiedPlayerDetail {
@@ -86,6 +88,16 @@ export interface UnifiedPlayerDetail {
     reelCompleted: number;
     /** 最近任务时间 */
     lastTaskAt: string | null;
+  } | null;
+  playerwarp: {
+    /** 创建地标数 */
+    warpCount: number;
+    /** 上架地标数 */
+    displayedCount: number;
+    /** 地标总流量 */
+    totalTp: number;
+    /** 最近创建地标时间 */
+    lastCreateAt: string | null;
   } | null;
 }
 

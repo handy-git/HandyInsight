@@ -15,6 +15,7 @@ import {
   ClipboardListIcon,
   ClockIcon,
   LogInIcon,
+  MapPinIcon,
   MedalIcon,
   PawPrintIcon,
   ShieldCheckIcon,
@@ -252,56 +253,90 @@ export default function UnifiedPlayerDetailPage({
           {(detail.playertitle ||
             detail.companions ||
             detail.authme ||
-            detail.task) && (
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
-              {detail.playertitle && (
-                <span className="flex items-center gap-1.5">
-                  <MedalIcon className="size-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">称号</span>
-                  {detail.playertitle.usingTitle ? (
-                    <McText text={detail.playertitle.usingTitle} />
-                  ) : (
-                    <span>{detail.playertitle.titleCount} 个</span>
-                  )}
-                </span>
-              )}
-              {detail.companions && (
-                <span className="flex items-center gap-1.5">
-                  <PawPrintIcon className="size-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">宠物</span>
-                  <span>{detail.companions.totalCompanions} 只</span>
-                  {detail.companions.activeCompanion && (
-                    <span className="text-muted-foreground">
-                      · 出战 {detail.companions.activeCompanion}
-                    </span>
-                  )}
-                </span>
-              )}
+            detail.task ||
+            detail.playerwarp) && (
+            <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {detail.authme && (
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheckIcon className="size-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">账户</span>
-                  <span>{detail.authme.ip ?? detail.authme.regIp ?? "—"}</span>
+                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <ShieldCheckIcon className="size-3.5 shrink-0" />
+                    账户
+                  </span>
+                  <span className="truncate text-sm font-medium">
+                    {detail.authme.ip ?? detail.authme.regIp ?? "—"}
+                  </span>
                   {detail.authme.lastLoginAt && (
-                    <span className="text-muted-foreground">
-                      · {formatDateTime(detail.authme.lastLoginAt)} 登录
+                    <span className="truncate text-sm text-muted-foreground">
+                      {formatDateTime(detail.authme.lastLoginAt)} 登录
                     </span>
                   )}
-                </span>
+                </div>
+              )}
+              {detail.playertitle && (
+                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MedalIcon className="size-3.5 shrink-0" />
+                    称号
+                  </span>
+                  {detail.playertitle.usingTitle ? (
+                    <span className="block truncate text-sm font-medium">
+                      <McText text={detail.playertitle.usingTitle} />
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">
+                      {detail.playertitle.titleCount} 个
+                    </span>
+                  )}
+                </div>
               )}
               {detail.task && (
-                <span className="flex items-center gap-1.5">
-                  <ClipboardListIcon className="size-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">任务</span>
-                  <span>{detail.task.coins ?? "—"} 任务币</span>
-                  <span className="text-muted-foreground">
-                    · 完成{" "}
+                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <ClipboardListIcon className="size-3.5 shrink-0" />
+                    任务
+                  </span>
+                  <span className="text-sm font-medium">
+                    {detail.task.coins ?? "—"} 任务币
+                  </span>
+                  <span className="truncate text-sm text-muted-foreground">
+                    完成{" "}
                     {detail.task.dailyCompleted +
                       detail.task.npcCompleted +
                       detail.task.reelCompleted}{" "}
                     个
                   </span>
-                </span>
+                </div>
+              )}
+              {detail.playerwarp && (
+                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MapPinIcon className="size-3.5 shrink-0" />
+                    地标
+                  </span>
+                  <span className="text-sm font-medium">
+                    {detail.playerwarp.warpCount} 个
+                  </span>
+                  <span className="truncate text-sm text-muted-foreground">
+                    上架 {detail.playerwarp.displayedCount} 个 · 流量{" "}
+                    {detail.playerwarp.totalTp} 次
+                  </span>
+                </div>
+              )}
+              {detail.companions && (
+                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <PawPrintIcon className="size-3.5 shrink-0" />
+                    宠物
+                  </span>
+                  <span className="text-sm font-medium">
+                    {detail.companions.totalCompanions} 只
+                  </span>
+                  {detail.companions.activeCompanion && (
+                    <span className="truncate text-sm text-muted-foreground">
+                      出战 {detail.companions.activeCompanion}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -779,6 +814,68 @@ export default function UnifiedPlayerDetailPage({
                   <CardHeader>
                     <CardDescription>{card.title}</CardDescription>
                     <CardTitle className="text-2xl">{card.value}</CardTitle>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {detail.playerwarp && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPinIcon className="size-4 text-muted-foreground" />
+              地标 · PlayerWarp
+            </CardTitle>
+            <CardDescription>
+              创建 {detail.playerwarp.warpCount} 个 · 上架{" "}
+              {detail.playerwarp.displayedCount} 个 · 总流量{" "}
+              {detail.playerwarp.totalTp} 次
+              {detail.playerwarp.lastCreateAt && (
+                <>
+                  {" "}
+                  · 最近创建 {formatDateTime(detail.playerwarp.lastCreateAt)}
+                </>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  title: "创建地标",
+                  value: `${detail.playerwarp.warpCount} 个`,
+                },
+                {
+                  title: "上架地标",
+                  value: `${detail.playerwarp.displayedCount} 个`,
+                },
+                {
+                  title: "地标总流量",
+                  value: new Intl.NumberFormat("zh-CN").format(
+                    detail.playerwarp.totalTp,
+                  ),
+                },
+                {
+                  title: "最近创建",
+                  value: detail.playerwarp.lastCreateAt
+                    ? formatDateTime(detail.playerwarp.lastCreateAt)
+                    : "—",
+                },
+              ].map((card) => (
+                <Card key={card.title}>
+                  <CardHeader>
+                    <CardDescription>{card.title}</CardDescription>
+                    <CardTitle
+                      className={
+                        card.title === "最近创建"
+                          ? "text-lg whitespace-nowrap"
+                          : "text-2xl"
+                      }
+                    >
+                      {card.value}
+                    </CardTitle>
                   </CardHeader>
                 </Card>
               ))}

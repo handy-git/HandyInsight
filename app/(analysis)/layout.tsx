@@ -10,6 +10,7 @@ import {
   ChevronDownIcon,
   ClipboardListIcon,
   LayoutDashboardIcon,
+  MapPinIcon,
   MedalIcon,
   PawPrintIcon,
   SettingsIcon,
@@ -103,6 +104,14 @@ const PLUGIN_NAV: Record<
       { href: "/task", label: "任务总览", icon: ClipboardListIcon },
       { href: "/task/players", label: "任务玩家", icon: UsersIcon },
       { href: "/task/library", label: "任务库", icon: BookOpenIcon },
+    ],
+  },
+  playerwarp: {
+    label: "PlayerWarp · 地标",
+    items: [
+      { href: "/warp", label: "地标总览", icon: MapPinIcon },
+      { href: "/warp/list", label: "地标库", icon: MapPinIcon },
+      { href: "/warp/players", label: "地标玩家", icon: UsersIcon },
     ],
   },
 };

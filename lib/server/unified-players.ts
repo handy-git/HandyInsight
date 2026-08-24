@@ -14,6 +14,7 @@ import {
 } from "@/lib/plugins/companions/queries";
 import { getTitlePlayerSummary } from "@/lib/plugins/playertitle/queries";
 import { getTaskPlayerSummary } from "@/lib/plugins/playertask/queries";
+import { getWarpPlayerSummary } from "@/lib/plugins/playerwarp/queries";
 import {
   buildPlayerRegistry,
   type RegistryEntry,
@@ -75,6 +76,7 @@ export async function getUnifiedPlayers(
   const companionCoins = new Map<string, number>();
   const titleCoins = new Map<string, number>();
   const taskCoins = new Map<string, number>();
+  const warpCounts = new Map<string, number>();
 
   if (enabled.has("playertime")) {
     const onlineRows = await query<RowDataPacket[]>(
@@ -144,6 +146,18 @@ export async function getUnifiedPlayers(
     }
   }
 
+  if (enabled.has("playerwarp")) {
+    const countRows = await query<RowDataPacket[]>(
+      `SELECT player_uuid AS uuid, COUNT(*) AS total
+         FROM warp_player
+        WHERE player_uuid IS NOT NULL
+        GROUP BY player_uuid`,
+    );
+    for (const row of countRows) {
+      warpCounts.set(String(row.uuid), Number(row.total));
+    }
+  }
+
   const nameToUuid = new Map<string, string>();
   for (const entry of registry) {
     if (entry.uuid) {
@@ -167,6 +181,7 @@ export async function getUnifiedPlayers(
       companionCoins: uuid ? (companionCoins.get(uuid) ?? null) : null,
       titleCoins: uuid ? (titleCoins.get(uuid) ?? null) : null,
       taskCoins: uuid ? (taskCoins.get(uuid) ?? null) : null,
+      warpCount: uuid ? (warpCounts.get(uuid) ?? 0) : 0,
     };
   });
 
@@ -216,6 +231,7 @@ export async function getUnifiedPlayerDetail(
   let companions: UnifiedPlayerDetail["companions"] = null;
   let playertitle: UnifiedPlayerDetail["playertitle"] = null;
   let task: UnifiedPlayerDetail["task"] = null;
+  let playerwarp: UnifiedPlayerDetail["playerwarp"] = null;
   let online = false;
 
   if (uuid && enabled.has("playertime")) {
@@ -333,6 +349,22 @@ export async function getUnifiedPlayerDetail(
     );
   }
 
+  if (uuid && enabled.has("playerwarp")) {
+    tasks.push(
+      (async () => {
+        const summary = await getWarpPlayerSummary(uuid);
+        if (summary) {
+          playerwarp = {
+            warpCount: summary.warpCount,
+            displayedCount: summary.displayedCount,
+            totalTp: summary.totalTp,
+            lastCreateAt: summary.lastCreateAt,
+          };
+        }
+      })(),
+    );
+  }
+
   await Promise.all(tasks);
 
   return {
@@ -349,6 +381,7 @@ export async function getUnifiedPlayerDetail(
     companions,
     playertitle,
     task,
+    playerwarp,
   };
 }
 

@@ -65,6 +65,13 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     tables: ["task_coin", "task_player", "task_npc_player", "task_reel"],
     landing: "/task",
   },
+  {
+    id: "playerwarp",
+    name: "PlayerWarp",
+    description: "地标传送",
+    tables: ["warp_player", "warp_tp_player"],
+    landing: "/warp",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

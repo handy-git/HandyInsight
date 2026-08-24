@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3Icon,
@@ -170,6 +171,13 @@ export default function AnalysisLayout({
                 size="lg"
                 render={<Link href="/overview/players" />}
               >
+                <Image
+                  src="/logo.png"
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="size-7 shrink-0 object-contain"
+                />
                 <span className="font-semibold">HandyInsight</span>
               </SidebarMenuButton>
             </SidebarMenuItem>

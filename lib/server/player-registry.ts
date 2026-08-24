@@ -97,6 +97,17 @@ async function fetchPlayerTitle(): Promise<RowDataPacket[]> {
   );
 }
 
+async function fetchPlayerTask(): Promise<RowDataPacket[]> {
+  // 任务币表带登录时间，提供来源/名称/最近活跃
+  return query<RowDataPacket[]>(
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name,
+            MAX(last_join_time) AS lastActiveAt
+       FROM task_coin
+      WHERE player_uuid IS NOT NULL
+      GROUP BY player_uuid`,
+  );
+}
+
 /** 构建玩家目录（uuid → 档案；AuthMe 独有玩家以虚拟键挂载）。 */
 export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   if (cache && cache.expiresAt > Date.now()) {
@@ -194,6 +205,36 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           registeredAt: null,
           sources: ["playertitle"],
           lastActiveAt: null,
+        });
+      }
+    }
+  }
+
+  if (enabled.has("playertask")) {
+    for (const row of await fetchPlayerTask()) {
+      const uuid = String(row.uuid);
+      const name = row.name ? String(row.name) : uuid.slice(0, 8);
+      nameToUuid.set(normalizeName(name), uuid);
+      const existing = byUuid.get(uuid);
+      if (existing) {
+        existing.sources.push("playertask");
+        if (
+          row.lastActiveAt &&
+          (!existing.lastActiveAt ||
+            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
+        ) {
+          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
+        }
+      } else {
+        byUuid.set(uuid, {
+          key: uuid,
+          uuid,
+          name,
+          registeredAt: null,
+          sources: ["playertask"],
+          lastActiveAt: row.lastActiveAt
+            ? formatDateTime(String(row.lastActiveAt))
+            : null,
         });
       }
     }

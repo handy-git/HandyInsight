@@ -12,6 +12,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   AlertCircleIcon,
   CalendarCheckIcon,
+  ClipboardListIcon,
   ClockIcon,
   LogInIcon,
   MedalIcon,
@@ -248,7 +249,10 @@ export default function UnifiedPlayerDetailPage({
               </span>
             </span>
           </CardTitle>
-          {(detail.playertitle || detail.companions || detail.authme) && (
+          {(detail.playertitle ||
+            detail.companions ||
+            detail.authme ||
+            detail.task) && (
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
               {detail.playertitle && (
                 <span className="flex items-center gap-1.5">
@@ -283,6 +287,20 @@ export default function UnifiedPlayerDetailPage({
                       · {formatDateTime(detail.authme.lastLoginAt)} 登录
                     </span>
                   )}
+                </span>
+              )}
+              {detail.task && (
+                <span className="flex items-center gap-1.5">
+                  <ClipboardListIcon className="size-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">任务</span>
+                  <span>{detail.task.coins ?? "—"} 任务币</span>
+                  <span className="text-muted-foreground">
+                    · 完成{" "}
+                    {detail.task.dailyCompleted +
+                      detail.task.npcCompleted +
+                      detail.task.reelCompleted}{" "}
+                    个
+                  </span>
                 </span>
               )}
             </div>
@@ -712,6 +730,61 @@ export default function UnifiedPlayerDetailPage({
           </Card>
         )}
         </>
+      )}
+      {detail.task && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardListIcon className="size-4 text-muted-foreground" />
+              任务 · PlayerTask
+            </CardTitle>
+            <CardDescription>
+              每日完成 {detail.task.dailyCompleted} 个 · NPC 完成{" "}
+              {detail.task.npcCompleted} 个 · 卷轴完成{" "}
+              {detail.task.reelCompleted} 个
+              {detail.task.lastTaskAt && (
+                <>
+                  {" "}
+                  · 最近任务 {formatDateTime(detail.task.lastTaskAt)}
+                </>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  title: "任务币",
+                  value:
+                    detail.task.coins === null
+                      ? "—"
+                      : new Intl.NumberFormat("zh-CN").format(
+                          detail.task.coins,
+                        ),
+                },
+                {
+                  title: "每日完成",
+                  value: `${detail.task.dailyCompleted} 个`,
+                },
+                {
+                  title: "NPC 完成",
+                  value: `${detail.task.npcCompleted} 个`,
+                },
+                {
+                  title: "卷轴完成",
+                  value: `${detail.task.reelCompleted} 个`,
+                },
+              ].map((card) => (
+                <Card key={card.title}>
+                  <CardHeader>
+                    <CardDescription>{card.title}</CardDescription>
+                    <CardTitle className="text-2xl">{card.value}</CardTitle>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </>
   );

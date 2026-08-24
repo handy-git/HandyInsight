@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3Icon,
+  BookOpenIcon,
   CalendarCheckIcon,
   ChevronDownIcon,
+  ClipboardListIcon,
   LayoutDashboardIcon,
   MedalIcon,
   PawPrintIcon,
@@ -93,6 +95,14 @@ const PLUGIN_NAV: Record<
       { href: "/title", label: "称号总览", icon: MedalIcon },
       { href: "/title/list", label: "称号库", icon: MedalIcon },
       { href: "/title/players", label: "称号玩家", icon: UsersIcon },
+    ],
+  },
+  playertask: {
+    label: "PlayerTask · 任务",
+    items: [
+      { href: "/task", label: "任务总览", icon: ClipboardListIcon },
+      { href: "/task/players", label: "任务玩家", icon: UsersIcon },
+      { href: "/task/library", label: "任务库", icon: BookOpenIcon },
     ],
   },
 };

@@ -18,6 +18,8 @@ export interface UnifiedPlayerItem {
   companionCoins: number | null;
   /** 称号币（PlayerTitle） */
   titleCoins: number | null;
+  /** 任务币（PlayerTask） */
+  taskCoins: number | null;
 }
 
 export interface UnifiedPlayerDetail {
@@ -72,6 +74,18 @@ export interface UnifiedPlayerDetail {
     titleCount: number;
     /** 称号币 */
     coins: number | null;
+  } | null;
+  task: {
+    /** 任务币 */
+    coins: number | null;
+    /** 已完成每日任务数 */
+    dailyCompleted: number;
+    /** 已完成 NPC 任务数 */
+    npcCompleted: number;
+    /** 已完成卷轴任务数 */
+    reelCompleted: number;
+    /** 最近任务时间 */
+    lastTaskAt: string | null;
   } | null;
 }
 

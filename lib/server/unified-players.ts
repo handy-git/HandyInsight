@@ -13,6 +13,7 @@ import {
   getCompanionsPlayerDetail,
 } from "@/lib/plugins/companions/queries";
 import { getTitlePlayerSummary } from "@/lib/plugins/playertitle/queries";
+import { getTaskPlayerSummary } from "@/lib/plugins/playertask/queries";
 import {
   buildPlayerRegistry,
   type RegistryEntry,
@@ -73,6 +74,7 @@ export async function getUnifiedPlayers(
   const companionCounts = new Map<string, number>();
   const companionCoins = new Map<string, number>();
   const titleCoins = new Map<string, number>();
+  const taskCoins = new Map<string, number>();
 
   if (enabled.has("playertime")) {
     const onlineRows = await query<RowDataPacket[]>(
@@ -128,6 +130,20 @@ export async function getUnifiedPlayers(
     }
   }
 
+  if (enabled.has("playertask")) {
+    const coinRows = await query<RowDataPacket[]>(
+      `SELECT player_uuid AS uuid, MAX(amount) AS amount
+         FROM task_coin
+        WHERE player_uuid IS NOT NULL
+        GROUP BY player_uuid`,
+    );
+    for (const row of coinRows) {
+      if (row.amount !== null && row.amount !== undefined) {
+        taskCoins.set(String(row.uuid), Number(row.amount));
+      }
+    }
+  }
+
   const nameToUuid = new Map<string, string>();
   for (const entry of registry) {
     if (entry.uuid) {
@@ -150,6 +166,7 @@ export async function getUnifiedPlayers(
       companionCount: uuid ? (companionCounts.get(uuid) ?? 0) : 0,
       companionCoins: uuid ? (companionCoins.get(uuid) ?? null) : null,
       titleCoins: uuid ? (titleCoins.get(uuid) ?? null) : null,
+      taskCoins: uuid ? (taskCoins.get(uuid) ?? null) : null,
     };
   });
 
@@ -198,6 +215,7 @@ export async function getUnifiedPlayerDetail(
   let authme: UnifiedPlayerDetail["authme"] = null;
   let companions: UnifiedPlayerDetail["companions"] = null;
   let playertitle: UnifiedPlayerDetail["playertitle"] = null;
+  let task: UnifiedPlayerDetail["task"] = null;
   let online = false;
 
   if (uuid && enabled.has("playertime")) {
@@ -298,6 +316,23 @@ export async function getUnifiedPlayerDetail(
     );
   }
 
+  if (uuid && enabled.has("playertask")) {
+    tasks.push(
+      (async () => {
+        const summary = await getTaskPlayerSummary(uuid);
+        if (summary) {
+          task = {
+            coins: summary.coins,
+            dailyCompleted: summary.dailyCompleted,
+            npcCompleted: summary.npcCompleted,
+            reelCompleted: summary.reelCompleted,
+            lastTaskAt: summary.lastTaskAt,
+          };
+        }
+      })(),
+    );
+  }
+
   await Promise.all(tasks);
 
   return {
@@ -313,6 +348,7 @@ export async function getUnifiedPlayerDetail(
     authme,
     companions,
     playertitle,
+    task,
   };
 }
 

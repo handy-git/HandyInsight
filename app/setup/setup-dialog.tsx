@@ -23,6 +23,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { toast } from "sonner";
 import {
   BlocksIcon,
   CheckCircle2Icon,
@@ -262,6 +263,9 @@ export function SettingsDialog({
       });
       const data = (await response.json()) as { ok: boolean; message?: string };
       if (data.ok) {
+        toast.success("配置已保存", {
+          description: "数据库连接与插件偏好已更新。",
+        });
         onSaved?.();
       } else {
         setSaveError(data.message ?? "保存失败，请重试");

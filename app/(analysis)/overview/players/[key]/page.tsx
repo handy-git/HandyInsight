@@ -23,6 +23,7 @@ import {
   TicketIcon,
 } from "lucide-react";
 
+import { StatTile } from "@/components/stat-tile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -260,104 +261,75 @@ export default function UnifiedPlayerDetailPage({
             detail.playercurrency) && (
             <div className="mt-4 flex flex-wrap gap-2.5">
               {detail.authme && (
-                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <ShieldCheckIcon className="size-3.5 shrink-0" />
-                    账户
-                  </span>
-                  <span className="truncate text-sm font-medium">
-                    {detail.authme.ip ?? detail.authme.regIp ?? "—"}
-                  </span>
-                  {detail.authme.lastLoginAt && (
-                    <span className="truncate text-sm text-muted-foreground">
-                      {formatDateTime(detail.authme.lastLoginAt)} 登录
-                    </span>
-                  )}
-                </div>
+                <StatTile
+                  icon={ShieldCheckIcon}
+                  label="账户"
+                  value={detail.authme.ip ?? detail.authme.regIp ?? "—"}
+                  hint={
+                    detail.authme.lastLoginAt &&
+                    `${formatDateTime(detail.authme.lastLoginAt)} 登录`
+                  }
+                />
               )}
               {detail.playertitle && (
-                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MedalIcon className="size-3.5 shrink-0" />
-                    称号
-                  </span>
-                  {detail.playertitle.usingTitle ? (
-                    <span className="block truncate text-sm font-medium">
+                <StatTile
+                  icon={MedalIcon}
+                  label="称号"
+                  value={
+                    detail.playertitle.usingTitle ? (
                       <McText text={detail.playertitle.usingTitle} />
-                    </span>
-                  ) : (
-                    <span className="text-sm font-medium">
-                      {detail.playertitle.titleCount} 个
-                    </span>
-                  )}
-                </div>
+                    ) : (
+                      `${detail.playertitle.titleCount} 个`
+                    )
+                  }
+                />
               )}
               {detail.task && (
-                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <ClipboardListIcon className="size-3.5 shrink-0" />
-                    任务
-                  </span>
-                  <span className="text-sm font-medium">
-                    {detail.task.coins ?? "—"} 任务币
-                  </span>
-                  <span className="truncate text-sm text-muted-foreground">
-                    完成{" "}
-                    {detail.task.dailyCompleted +
-                      detail.task.npcCompleted +
-                      detail.task.reelCompleted}{" "}
-                    个
-                  </span>
-                </div>
+                <StatTile
+                  icon={ClipboardListIcon}
+                  label="任务"
+                  value={`${detail.task.coins ?? "—"} 任务币`}
+                  hint={`完成 ${
+                    detail.task.dailyCompleted +
+                    detail.task.npcCompleted +
+                    detail.task.reelCompleted
+                  } 个`}
+                />
               )}
               {detail.playerwarp && (
-                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPinIcon className="size-3.5 shrink-0" />
-                    地标
-                  </span>
-                  <span className="text-sm font-medium">
-                    {detail.playerwarp.warpCount} 个
-                  </span>
-                  <span className="truncate text-sm text-muted-foreground">
-                    上架 {detail.playerwarp.displayedCount} 个 · 流量{" "}
-                    {detail.playerwarp.totalTp} 次
-                  </span>
-                </div>
+                <StatTile
+                  icon={MapPinIcon}
+                  label="地标"
+                  value={`${detail.playerwarp.warpCount} 个`}
+                  hint={`上架 ${detail.playerwarp.displayedCount} 个 · 流量 ${detail.playerwarp.totalTp} 次`}
+                />
               )}
               {detail.playercurrency && (
-                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <CoinsIcon className="size-3.5 shrink-0" />
-                    货币
-                  </span>
-                  <span className="text-sm font-medium">
-                    {detail.playercurrency.typeCount} 种
-                  </span>
-                  <span className="truncate text-sm text-muted-foreground">
-                    {detail.playercurrency.topType
-                      ? `${detail.playercurrency.topType} ${formatNumber(detail.playercurrency.topBalance)}`
-                      : "—"}
-                    {detail.playercurrency.lastChangeAt &&
-                      ` · ${detail.playercurrency.lastChangeAt}`}
-                  </span>
-                </div>
+                <StatTile
+                  icon={CoinsIcon}
+                  label="货币"
+                  value={`${detail.playercurrency.typeCount} 种`}
+                  hint={
+                    <>
+                      {detail.playercurrency.topType
+                        ? `${detail.playercurrency.topType} ${formatNumber(detail.playercurrency.topBalance)}`
+                        : "—"}
+                      {detail.playercurrency.lastChangeAt &&
+                        ` · ${detail.playercurrency.lastChangeAt}`}
+                    </>
+                  }
+                />
               )}
               {detail.companions && (
-                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <PawPrintIcon className="size-3.5 shrink-0" />
-                    宠物
-                  </span>
-                  <span className="text-sm font-medium">
-                    {detail.companions.totalCompanions} 只
-                  </span>
-                  {detail.companions.activeCompanion && (
-                    <span className="truncate text-sm text-muted-foreground">
-                      出战 {detail.companions.activeCompanion}
-                    </span>
-                  )}
-                </div>
+                <StatTile
+                  icon={PawPrintIcon}
+                  label="宠物"
+                  value={`${detail.companions.totalCompanions} 只`}
+                  hint={
+                    detail.companions.activeCompanion &&
+                    `出战 ${detail.companions.activeCompanion}`
+                  }
+                />
               )}
             </div>
           )}

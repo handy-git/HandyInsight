@@ -11,6 +11,7 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -270,13 +271,14 @@ export default function CurrencyDashboardPage() {
                     </span>
                   </button>
                 ))}
-                <button
-                  type="button"
-                  className="mt-2 cursor-pointer self-end text-sm text-muted-foreground underline-offset-4 hover:underline"
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="mt-2 h-auto self-end px-0 text-muted-foreground"
                   onClick={() => router.push("/currency/logs")}
                 >
                   查看全部流水 →
-                </button>
+                </Button>
               </div>
             )}
           </CardContent>

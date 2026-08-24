@@ -6,6 +6,7 @@ import { AlertCircleIcon, MapPinIcon, SearchIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -142,13 +143,14 @@ export default function WarpListPage() {
             }}
           />
           {hasFilter && (
-            <button
-              type="button"
-              className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto px-0 text-muted-foreground"
               onClick={handleReset}
             >
               重置筛选
-            </button>
+            </Button>
           )}
         </div>
 

@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
 import { McText } from "@/lib/common/mc-text";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { TitlePlayerItem } from "@/lib/plugins/playertitle/types";
 
@@ -165,7 +165,7 @@ export default function TitlePlayersPage() {
                     <TableCell className="text-right">
                       {player.coins === null
                         ? "—"
-                        : new Intl.NumberFormat("zh-CN").format(player.coins)}
+                        : formatNumber(player.coins)}
                     </TableCell>
                   </TableRow>
                 ))}

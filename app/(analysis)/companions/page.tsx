@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import type {
   CompanionsEquipmentEntry,
   CompanionsOverview,
@@ -41,7 +41,7 @@ interface RankingData {
 }
 
 function formatCoins(coins: number): string {
-  return new Intl.NumberFormat("zh-CN").format(coins);
+  return formatNumber(coins);
 }
 
 export default function CompanionsDashboardPage() {

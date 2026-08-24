@@ -1,7 +1,8 @@
 import { addDays, format, startOfDay } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
-import { formatDateTime } from "@/lib/common/format";
+import { formatDateTime, num } from "@/lib/common/format";
+import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 import type { Paginated } from "@/lib/common/types";
 import type {
@@ -30,24 +31,9 @@ function unixSeconds(date: Date): number {
   return Math.floor(date.getTime() / 1000);
 }
 
-/* ---------- 总览：30 秒进程内缓存 ---------- */
+/* ---------- 总览：30 秒进程内缓存（共享实现，命名空间隔离） ---------- */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-
-async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key) as CacheEntry<T> | undefined;
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value;
-  }
-  const value = await loader();
-  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
-  return value;
-}
+const cached = createCache("authme");
 
 export async function getAuthmeOverview(): Promise<AuthmeOverview> {
   return cached("overview", async () => {
@@ -72,13 +58,13 @@ export async function getAuthmeOverview(): Promise<AuthmeOverview> {
     );
     const row = rows[0] ?? {};
     return {
-      totalPlayers: Number(row.totalPlayers ?? 0),
-      loggedPlayers: Number(row.loggedPlayers ?? 0),
-      todayRegistered: Number(row.todayRegistered ?? 0),
-      todayLoggedIn: Number(row.todayLoggedIn ?? 0),
-      active24h: Number(row.active24h ?? 0),
-      active7d: Number(row.active7d ?? 0),
-      active30d: Number(row.active30d ?? 0),
+      totalPlayers: num(row.totalPlayers),
+      loggedPlayers: num(row.loggedPlayers),
+      todayRegistered: num(row.todayRegistered),
+      todayLoggedIn: num(row.todayLoggedIn),
+      active24h: num(row.active24h),
+      active7d: num(row.active7d),
+      active30d: num(row.active30d),
     };
   });
 }
@@ -190,7 +176,7 @@ export async function getAuthmeAccounts(
       y: Number(row.y),
       z: Number(row.z),
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };

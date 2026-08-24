@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 
 import { getPlayerDetail, getTrend } from "@/lib/plugins/playertime/queries";
 import { uuidSchema } from "@/lib/plugins/playertime/schemas";
-import { apiError } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { withPlugin } from "@/lib/server/api";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ uuid: string }> },
 ) {
-  try {
-    await requirePlugin("playertime");
+  return withPlugin("playertime", async () => {
     const uuid = uuidSchema.parse((await params).uuid);
     const detail = await getPlayerDetail(uuid);
     if (!detail) {
@@ -21,7 +19,5 @@ export async function GET(
     }
     const trend = await getTrend("30d", uuid);
     return NextResponse.json({ ...detail, trend });
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

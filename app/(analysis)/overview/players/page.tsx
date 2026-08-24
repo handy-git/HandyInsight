@@ -46,6 +46,7 @@ import { playerAvatarUrl } from "@/lib/common/avatar";
 import {
   fetchJson,
   formatDateTime,
+  formatNumber,
   formatSeconds,
 } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
@@ -220,17 +221,17 @@ export default function UnifiedPlayersPage() {
                     <TableCell className="text-right">
                       {player.companionCoins === null
                         ? "—"
-                        : new Intl.NumberFormat("zh-CN").format(player.companionCoins)}
+                        : formatNumber(player.companionCoins)}
                     </TableCell>
                     <TableCell className="text-right">
                       {player.titleCoins === null
                         ? "—"
-                        : new Intl.NumberFormat("zh-CN").format(player.titleCoins)}
+                        : formatNumber(player.titleCoins)}
                     </TableCell>
                     <TableCell className="text-right">
                       {player.taskCoins === null
                         ? "—"
-                        : new Intl.NumberFormat("zh-CN").format(player.taskCoins)}
+                        : formatNumber(player.taskCoins)}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {relativeTime(player.lastActiveAt)}

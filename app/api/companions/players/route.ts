@@ -4,17 +4,13 @@ import {
   companionsPlayersQuerySchema,
   getCompanionsPlayers,
 } from "@/lib/plugins/companions/queries";
-import { apiError, searchParamsObject } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
-  try {
-    await requirePlugin("companions");
+  return withPlugin("companions", async () => {
     const { keyword, page } = companionsPlayersQuerySchema.parse(
       searchParamsObject(request),
     );
     return NextResponse.json(await getCompanionsPlayers(keyword, page));
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 
 import { getAuthmeAccountDetail } from "@/lib/plugins/authme/queries";
 import { authmeUsernameSchema } from "@/lib/plugins/authme/schemas";
-import { apiError } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { withPlugin } from "@/lib/server/api";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ username: string }> },
 ) {
-  try {
-    await requirePlugin("authme");
+  return withPlugin("authme", async () => {
     const username = authmeUsernameSchema.parse((await params).username);
     const detail = await getAuthmeAccountDetail(username);
     if (!detail) {
@@ -20,7 +18,5 @@ export async function GET(
       );
     }
     return NextResponse.json(detail);
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

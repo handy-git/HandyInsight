@@ -40,7 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
 import type { Paginated } from "@/lib/common/types";
 import type { TitleListItem } from "@/lib/plugins/playertitle/types";
@@ -48,7 +48,7 @@ import type { TitleListItem } from "@/lib/plugins/playertitle/types";
 function formatPrice(item: TitleListItem): string {
   if (!item.buyType) return "—";
   if (item.amount === null) return item.buyType;
-  return `${item.buyType} × ${new Intl.NumberFormat("zh-CN").format(item.amount)}`;
+  return `${item.buyType} × ${formatNumber(item.amount)}`;
 }
 
 function formatDuration(day: number): string {

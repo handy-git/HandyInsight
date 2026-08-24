@@ -1,7 +1,8 @@
 import { addDays, format, startOfDay, startOfWeek } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
-import { formatDateTime } from "@/lib/common/format";
+import { formatDateTime, num } from "@/lib/common/format";
+import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 import type {
   OnlinePlayer,
@@ -38,24 +39,9 @@ function rangeStart(range: TrendRange, now = new Date()): Date {
   return startOfDay(addDays(now, -days));
 }
 
-/* ---------- 总览与排行：30 秒进程内缓存 ---------- */
+/* ---------- 总览与排行：30 秒进程内缓存（共享实现，命名空间隔离） ---------- */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-
-async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key) as CacheEntry<T> | undefined;
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value;
-  }
-  const value = await loader();
-  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
-  return value;
-}
+const cached = createCache("playertime");
 
 /* ---------- 总览 ---------- */
 
@@ -90,11 +76,11 @@ export async function getOverview(): Promise<PlayertimeOverview> {
     );
 
     return {
-      onlinePlayers: Number(onlineRows[0]?.onlinePlayers ?? 0),
-      todayActivePlayers: Number(todayRows[0]?.todayActivePlayers ?? 0),
-      todaySeconds: Number(todayRows[0]?.todaySeconds ?? 0),
+      onlinePlayers: num(onlineRows[0]?.onlinePlayers),
+      todayActivePlayers: num(todayRows[0]?.todayActivePlayers),
+      todaySeconds: num(todayRows[0]?.todaySeconds),
       averageSessionSeconds: Math.round(
-        Number(avgRows[0]?.averageSessionSeconds ?? 0),
+        num(avgRows[0]?.averageSessionSeconds),
       ),
     };
   });
@@ -257,7 +243,7 @@ export async function getRanking(
         name: String(row.name),
         seconds: Number(row.seconds),
       })),
-      total: Number(countRows[0]?.total ?? 0),
+      total: num(countRows[0]?.total),
       page,
       pageSize: PAGE_SIZE,
     };
@@ -309,7 +295,7 @@ export async function getPlayers(
       monthSeconds: Number(row.monthSeconds),
       totalSeconds: Number(row.totalSeconds),
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -377,7 +363,7 @@ export async function getPlayerSessions(
       quitTime: row.quitTime ? formatDateTime(String(row.quitTime)) : null,
       seconds: Number(row.seconds),
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize,
   };

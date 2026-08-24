@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getCompanionsOverview } from "@/lib/plugins/companions/queries";
-import { apiError } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { withPlugin } from "@/lib/server/api";
 
 export async function GET() {
-  try {
-    await requirePlugin("companions");
+  return withPlugin("companions", async () => {
     return NextResponse.json(await getCompanionsOverview());
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

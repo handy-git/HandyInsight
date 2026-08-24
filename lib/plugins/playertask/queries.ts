@@ -1,6 +1,6 @@
 import type { RowDataPacket } from "mysql2/promise";
 
-import { formatDateTime } from "@/lib/common/format";
+import { formatDateTime, num } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import {
   taskPlayersQuerySchema,
@@ -19,7 +19,8 @@ import type {
   TaskPoolEntry,
   TaskRecord,
 } from "@/lib/plugins/playertask/types";
-import { query } from "@/lib/server/mysql";
+import { createCache } from "@/lib/server/cache";
+import { escapeIdent, query } from "@/lib/server/mysql";
 
 const PAGE_SIZE = 20;
 
@@ -36,7 +37,7 @@ async function tableExists(table: string): Promise<boolean> {
   }
   let exists = false;
   try {
-    await query<RowDataPacket[]>(`SELECT 1 FROM \`${table}\` LIMIT 1`);
+    await query<RowDataPacket[]>(`SELECT 1 FROM ${escapeIdent(table)} LIMIT 1`);
     exists = true;
   } catch (error) {
     const code = (error as NodeJS.ErrnoException)?.code;
@@ -59,24 +60,9 @@ async function queryIfExists<T extends RowDataPacket[]>(
   return query<T>(sql);
 }
 
-/* ---------- 总览：30 秒进程内缓存 ---------- */
+/* ---------- 总览：30 秒进程内缓存（共享实现，命名空间隔离） ---------- */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-
-async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key) as CacheEntry<T> | undefined;
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value;
-  }
-  const value = await loader();
-  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
-  return value;
-}
+const cached = createCache("playertask");
 
 const TYPE_LABELS: Record<TaskCategory, string> = {
   daily: "每日任务",
@@ -159,33 +145,33 @@ export async function getTaskOverview(): Promise<TaskOverview> {
     const typeStats = typeRows.map((row) => ({
       category: String(row.category) as TaskCategory,
       label: TYPE_LABELS[String(row.category) as TaskCategory] ?? String(row.category),
-      total: Number(row.total ?? 0),
-      completed: Number(row.completed ?? 0),
+      total: num(row.total),
+      completed: num(row.completed),
     }));
 
     return {
-      coinPlayers: Number(coin.players ?? 0),
-      totalCoins: Number(coin.coins ?? 0),
+      coinPlayers: num(coin.players),
+      totalCoins: num(coin.coins),
       todayCompleted:
-        Number(today.daily ?? 0) + Number(today.npc ?? 0),
-      activePlayers: Number(activeRows[0]?.total ?? 0),
+        num(today.daily) + num(today.npc),
+      activePlayers: num(activeRows[0]?.total),
       typeStats,
       rarityStats: rarityRows.map((row) => ({
         rarity: String(row.rarity),
-        total: Number(row.total ?? 0),
+        total: num(row.total),
       })),
       coinRanking: rankRows.map((row, index) => ({
         rank: index + 1,
         uuid: String(row.uuid),
         name: row.name ? String(row.name) : String(row.uuid).slice(0, 8),
-        coins: Number(row.coins ?? 0),
+        coins: num(row.coins),
       })),
       recentTasks: recentRows.map((row) => ({
         uuid: String(row.uuid),
         name: row.name ? String(row.name) : String(row.uuid).slice(0, 8),
         taskName: row.taskName ? String(row.taskName) : "未知任务",
         category: String(row.category) as TaskCategory,
-        completed: Number(row.status ?? 0) === 1,
+        completed: num(row.status) === 1,
         taskDate: formatDateTime(String(row.taskDate)),
       })),
     };
@@ -274,14 +260,14 @@ export async function getTaskPlayers(
         row.coins === null || row.coins === undefined
           ? null
           : Number(row.coins),
-      dailyCompleted: Number(row.dailyCompleted ?? 0),
-      npcCompleted: Number(row.npcCompleted ?? 0),
-      reelCompleted: Number(row.reelCompleted ?? 0),
+      dailyCompleted: num(row.dailyCompleted),
+      npcCompleted: num(row.npcCompleted),
+      reelCompleted: num(row.reelCompleted),
       lastTaskAt: row.lastTaskAt
         ? formatDateTime(String(row.lastTaskAt))
         : null,
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -381,8 +367,8 @@ export async function getTaskPlayerDetail(
       taskDemand: row.taskDemand ? String(row.taskDemand) : null,
       taskRewards: row.taskRewards ? String(row.taskRewards) : null,
       taskDate: row.taskDate ? formatDateTime(String(row.taskDate)) : null,
-      status: Number(row.status ?? 0),
-      completed: Number(row.status ?? 0) === 1,
+      status: num(row.status),
+      completed: num(row.status) === 1,
       refresh: row.refresh === null ? null : Number(row.refresh),
       demands: dailyDemands.get(Number(row.id)) ?? [],
     })),
@@ -393,8 +379,8 @@ export async function getTaskPlayerDetail(
       taskDemand: row.taskDemand ? String(row.taskDemand) : null,
       taskRewards: row.taskRewards ? String(row.taskRewards) : null,
       taskDate: row.taskDate ? formatDateTime(String(row.taskDate)) : null,
-      status: Number(row.status ?? 0),
-      completed: Number(row.status ?? 0) === 1,
+      status: num(row.status),
+      completed: num(row.status) === 1,
       claimCount: row.number === null ? null : Number(row.number),
       demands: npcDemands.get(Number(row.id)) ?? [],
     })),
@@ -405,8 +391,8 @@ export async function getTaskPlayerDetail(
       taskDemand: row.taskDemand ? String(row.taskDemand) : null,
       taskRewards: row.taskRewards ? String(row.taskRewards) : null,
       taskDate: null,
-      status: Number(row.status ?? 0),
-      completed: Number(row.status ?? 0) === 1,
+      status: num(row.status),
+      completed: num(row.status) === 1,
       rarity: row.rarity ? String(row.rarity) : null,
       demands: reelDemands.get(Number(row.id)) ?? [],
     })),
@@ -454,8 +440,8 @@ async function loadDemands(
       key,
       list.map((row) => ({
         type: row.type ? String(row.type) : null,
-        completionAmount: Number(row.completionAmount ?? 0),
-        amount: Number(row.amount ?? 0),
+        completionAmount: num(row.completionAmount),
+        amount: num(row.amount),
         description: row.description ? String(row.description) : null,
       })),
     ]),
@@ -492,9 +478,9 @@ export async function getTaskPlayerSummary(
   ]);
 
   const hasCoin = coinRows.length > 0;
-  const dailyTotal = Number(dailyRows[0]?.total ?? 0);
-  const npcTotal = Number(npcRows[0]?.total ?? 0);
-  const reelTotal = Number(reelRows[0]?.total ?? 0);
+  const dailyTotal = num(dailyRows[0]?.total);
+  const npcTotal = num(npcRows[0]?.total);
+  const reelTotal = num(reelRows[0]?.total);
   if (!hasCoin && dailyTotal === 0 && npcTotal === 0 && reelTotal === 0) {
     return null;
   }
@@ -585,7 +571,7 @@ export async function getTaskLibrary(): Promise<TaskLibrary> {
         parentId,
         parentName: parentId === null ? null : (npcIdToName.get(parentId) ?? null),
         npcId: row.npcId ? String(row.npcId) : null,
-        isEver: Number(row.isEver ?? 0) === 1,
+        isEver: num(row.isEver) === 1,
         number: row.number === null ? null : Number(row.number),
         cdSeconds: row.cd === null ? null : Number(row.cd),
       };

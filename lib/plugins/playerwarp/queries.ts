@@ -1,6 +1,6 @@
 import type { RowDataPacket } from "mysql2/promise";
 
-import { formatDateTime } from "@/lib/common/format";
+import { formatDateTime, num } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import {
   warpIdSchema,
@@ -21,7 +21,8 @@ import type {
   WarpTpRecord,
   WarpWhitelistEntry,
 } from "@/lib/plugins/playerwarp/types";
-import { query } from "@/lib/server/mysql";
+import { createCache } from "@/lib/server/cache";
+import { escapeIdent, query } from "@/lib/server/mysql";
 
 const PAGE_SIZE = 20;
 
@@ -38,7 +39,7 @@ async function tableExists(table: string): Promise<boolean> {
   }
   let exists = false;
   try {
-    await query<RowDataPacket[]>(`SELECT 1 FROM \`${table}\` LIMIT 1`);
+    await query<RowDataPacket[]>(`SELECT 1 FROM ${escapeIdent(table)} LIMIT 1`);
     exists = true;
   } catch (error) {
     const code = (error as NodeJS.ErrnoException)?.code;
@@ -62,24 +63,9 @@ async function queryIfExists<T extends RowDataPacket[]>(
   return query<T>(sql, params);
 }
 
-/* ---------- 总览：30 秒进程内缓存 ---------- */
+/* ---------- 总览：30 秒进程内缓存（共享实现，命名空间隔离） ---------- */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-
-async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key) as CacheEntry<T> | undefined;
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value;
-  }
-  const value = await loader();
-  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
-  return value;
-}
+const cached = createCache("playerwarp");
 
 /** 地标行 → WarpEntry（列表 / 总览通用）。 */
 function toWarpEntry(row: RowDataPacket): WarpEntry {
@@ -88,12 +74,12 @@ function toWarpEntry(row: RowDataPacket): WarpEntry {
     name: row.name ? String(row.name) : "未知地标",
     type: row.type ? String(row.type) : null,
     ownerName: row.ownerName ? String(row.ownerName) : String(row.uuid ?? "").slice(0, 8),
-    price: Number(row.price ?? 0),
-    tpNumber: Number(row.tpNumber ?? 0),
-    thermalValue: Number(row.thermalValue ?? 0),
+    price: num(row.price),
+    tpNumber: num(row.tpNumber),
+    thermalValue: num(row.thermalValue),
     serverName: row.serverName ? String(row.serverName) : null,
     worldName: row.worldName ? String(row.worldName) : null,
-    display: Number(row.display ?? 0) === 1,
+    display: num(row.display) === 1,
     top: isWarpTop(row),
     createTime: row.createTime ? formatDateTime(String(row.createTime)) : null,
     expirationTime: row.expirationTime
@@ -182,31 +168,31 @@ export async function getWarpOverview(): Promise<WarpOverview> {
 
     const stat = statRows[0] ?? {};
     return {
-      totalWarps: Number(stat.total ?? 0),
-      displayedWarps: Number(stat.displayed ?? 0),
-      totalTp: Number(stat.totalTp ?? 0),
+      totalWarps: num(stat.total),
+      displayedWarps: num(stat.displayed),
+      totalTp: num(stat.totalTp),
       totalCollections:
-        collectionRows.length > 0 ? Number(collectionRows[0].total ?? 0) : null,
-      totalLikes: likeRows.length > 0 ? Number(likeRows[0].total ?? 0) : null,
+        collectionRows.length > 0 ? num(collectionRows[0].total) : null,
+      totalLikes: likeRows.length > 0 ? num(likeRows[0].total) : null,
       thermalRanking: thermalRows.map((row, index) => ({
         rank: index + 1,
         id: Number(row.id),
         name: String(row.name),
-        value: Number(row.thermalValue ?? 0),
+        value: num(row.thermalValue),
       })),
       tpRanking: tpRows.map((row, index) => ({
         rank: index + 1,
         id: Number(row.id),
         name: String(row.name),
-        value: Number(row.tpNumber ?? 0),
+        value: num(row.tpNumber),
       })),
       typeStats: typeRows.map((row) => ({
         key: String(row.key),
-        total: Number(row.total ?? 0),
+        total: num(row.total),
       })),
       serverStats: serverRows.map((row) => ({
         key: String(row.key),
-        total: Number(row.total ?? 0),
+        total: num(row.total),
       })),
       latestWarps: latestRows.map(toWarpEntry),
     };
@@ -268,15 +254,15 @@ export async function getWarpPlayers(
     items: rows.map((row) => ({
       uuid: String(row.uuid),
       name: String(row.name),
-      warpCount: Number(row.warpCount ?? 0),
-      displayedCount: Number(row.displayedCount ?? 0),
-      totalTp: Number(row.totalTp ?? 0),
-      totalThermal: Number(row.totalThermal ?? 0),
+      warpCount: num(row.warpCount),
+      displayedCount: num(row.displayedCount),
+      totalTp: num(row.totalTp),
+      totalThermal: num(row.totalThermal),
       lastCreateAt: row.lastCreateAt
         ? formatDateTime(String(row.lastCreateAt))
         : null,
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -338,7 +324,7 @@ export async function getWarpPlayerDetail(
     warpId: Number(row.warpId),
     name: row.name ? String(row.name) : "未知地标",
     serverName: row.serverName ? String(row.serverName) : null,
-    display: Number(row.display ?? 0) === 1,
+    display: num(row.display) === 1,
     createTime: row.createTime ? formatDateTime(String(row.createTime)) : null,
   }));
   const tpRecords: WarpTpRecord[] = tpRows.map((row) => ({
@@ -405,7 +391,7 @@ export async function getWarpList(input: {
 
   return {
     items: rows.map((row) => toWarpListEntry(row)),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -500,13 +486,13 @@ export async function getWarpDetail(id: number): Promise<WarpDetail | null> {
     description: main.description ? String(main.description) : null,
     ownerUuid: String(main.uuid ?? ""),
     ownerName: main.ownerName ? String(main.ownerName) : "未知玩家",
-    price: Number(main.price ?? 0),
-    tpNumber: Number(main.tpNumber ?? 0),
-    thermalValue: Number(main.thermalValue ?? 0),
+    price: num(main.price),
+    tpNumber: num(main.tpNumber),
+    thermalValue: num(main.thermalValue),
     serverName: main.serverName ? String(main.serverName) : null,
     worldName: main.worldName ? String(main.worldName) : null,
     warpLocation: main.warpLocation ? String(main.warpLocation) : null,
-    display: Number(main.display ?? 0) === 1,
+    display: num(main.display) === 1,
     top: isWarpTop(main),
     creator: main.creator ? String(main.creator) : null,
     createTime: main.createTime ? formatDateTime(String(main.createTime)) : null,
@@ -514,9 +500,9 @@ export async function getWarpDetail(id: number): Promise<WarpDetail | null> {
       ? formatDateTime(String(main.expirationTime))
       : null,
     collectionCount:
-      collectionRows.length > 0 ? Number(collectionRows[0].total ?? 0) : null,
-    likeCount: likeStat ? Number(likeStat.total ?? 0) : null,
-    avgLike: likeStat ? Number(likeStat.avgLike ?? 0) : null,
+      collectionRows.length > 0 ? num(collectionRows[0].total) : null,
+    likeCount: likeStat ? num(likeStat.total) : null,
+    avgLike: likeStat ? num(likeStat.avgLike) : null,
     whitelist: whiteRows.length > 0 ? whitelist : null,
     recentTp: tpRows.length > 0 ? recentTp : null,
   };
@@ -537,13 +523,13 @@ export async function getWarpPlayerSummary(
     [uuid],
   );
   const row = rows[0];
-  if (!row || Number(row.warpCount ?? 0) === 0) {
+  if (!row || num(row.warpCount) === 0) {
     return null;
   }
   return {
-    warpCount: Number(row.warpCount ?? 0),
-    displayedCount: Number(row.displayedCount ?? 0),
-    totalTp: Number(row.totalTp ?? 0),
+    warpCount: num(row.warpCount),
+    displayedCount: num(row.displayedCount),
+    totalTp: num(row.totalTp),
     lastCreateAt: row.lastCreateAt
       ? formatDateTime(String(row.lastCreateAt))
       : null,

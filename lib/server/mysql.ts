@@ -3,6 +3,7 @@ import mysql from "mysql2/promise";
 import type { PluginMeta } from "@/lib/common/plugins";
 import { type MysqlConfig } from "@/lib/common/schemas";
 import { loadMysqlConfig } from "@/lib/server/config";
+import { invalidateQueryCache } from "@/lib/server/cache";
 import { detectEnabledPlugins } from "@/lib/server/plugins";
 
 /** 友好化常见连接错误，接口只返回该信息，不泄露 SQL 与地址细节。 */
@@ -78,6 +79,8 @@ export async function rebuildPool(): Promise<void> {
   }
   cache.pool = null;
   cache.enabledPlugins = null;
+  // 连接目标可能已切换，清空全部插件查询缓存与玩家目录缓存
+  invalidateQueryCache();
   const { invalidatePlayerRegistry } = await import(
     "@/lib/server/player-registry"
   );
@@ -194,6 +197,17 @@ export async function query<T extends mysql.QueryResult>(
   }
   const [rows] = await pool.query<T>(sql, params);
   return rows;
+}
+
+/**
+ * 标识符安全引号：仅放行字母 / 数字 / 下划线（表名、列名），
+ * 其余字符一律拒绝，杜绝标识符位置拼接注入。
+ */
+export function escapeIdent(identifier: string): string {
+  if (!/^[A-Za-z0-9_]+$/.test(identifier)) {
+    throw new Error("非法的 SQL 标识符");
+  }
+  return `\`${identifier}\``;
 }
 
 /** 校验插件是否已启用，未启用时抛出 PluginUnavailableError。 */

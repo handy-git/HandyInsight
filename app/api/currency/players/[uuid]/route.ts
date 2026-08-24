@@ -4,15 +4,13 @@ import {
   currencyUuidSchema,
   getCurrencyPlayerDetail,
 } from "@/lib/plugins/playercurrency/queries";
-import { apiError } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { withPlugin } from "@/lib/server/api";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ uuid: string }> },
 ) {
-  try {
-    await requirePlugin("playercurrency");
+  return withPlugin("playercurrency", async () => {
     const { uuid } = await params;
     const parsed = currencyUuidSchema.parse(uuid);
     const detail = await getCurrencyPlayerDetail(parsed);
@@ -23,7 +21,5 @@ export async function GET(
       );
     }
     return NextResponse.json(detail);
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

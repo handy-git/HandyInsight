@@ -4,17 +4,13 @@ import {
   getWarpPlayers,
   warpPlayersQuerySchema,
 } from "@/lib/plugins/playerwarp/queries";
-import { apiError, searchParamsObject } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
-  try {
-    await requirePlugin("playerwarp");
+  return withPlugin("playerwarp", async () => {
     const { keyword, page } = warpPlayersQuerySchema.parse(
       searchParamsObject(request),
     );
     return NextResponse.json(await getWarpPlayers(keyword, page));
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

@@ -24,6 +24,23 @@ export function secondsToHours(seconds: number): number {
   return Math.round((seconds / 3600) * 10) / 10;
 }
 
+/** 数字千分位格式化（zh-CN），用于余额 / 流量 / 热力等数值展示。 */
+export function formatNumber(value: number): string {
+  return new Intl.NumberFormat("zh-CN").format(value);
+}
+
+/**
+ * 数据库数值读取守卫：null / undefined / 空串与非法数值统一回退（默认 0），
+ * 避免 NULL 聚合列直接 Number() 产生 NaN。
+ */
+export function num(value: unknown, fallback = 0): number {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 export interface ApiFailure {
   ok: false;
   message: string;

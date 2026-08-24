@@ -4,17 +4,13 @@ import {
   currencyPlayersQuerySchema,
   getCurrencyPlayers,
 } from "@/lib/plugins/playercurrency/queries";
-import { apiError, searchParamsObject } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
-  try {
-    await requirePlugin("playercurrency");
+  return withPlugin("playercurrency", async () => {
     const { keyword, page } = currencyPlayersQuerySchema.parse(
       searchParamsObject(request),
     );
     return NextResponse.json(await getCurrencyPlayers(keyword, page));
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

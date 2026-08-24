@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
 import { McText } from "@/lib/common/mc-text";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import type { CompanionsPlayerDetail } from "@/lib/plugins/companions/types";
 
 export default function CompanionsPlayerDetailPage({
@@ -143,7 +143,7 @@ export default function CompanionsPlayerDetailPage({
             value:
               detail.coins === null
                 ? "—"
-                : `${new Intl.NumberFormat("zh-CN").format(detail.coins)}`,
+                : formatNumber(detail.coins),
           },
           {
             title: "最高能力等级",

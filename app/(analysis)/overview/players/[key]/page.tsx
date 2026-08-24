@@ -74,6 +74,7 @@ import { McText } from "@/lib/common/mc-text";
 import {
   fetchJson,
   formatDateTime,
+  formatNumber,
   formatSeconds,
   secondsToHours,
 } from "@/lib/common/format";
@@ -257,9 +258,9 @@ export default function UnifiedPlayerDetailPage({
             detail.task ||
             detail.playerwarp ||
             detail.playercurrency) && (
-            <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="mt-4 flex flex-wrap gap-2.5">
               {detail.authme && (
-                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <ShieldCheckIcon className="size-3.5 shrink-0" />
                     账户
@@ -275,7 +276,7 @@ export default function UnifiedPlayerDetailPage({
                 </div>
               )}
               {detail.playertitle && (
-                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <MedalIcon className="size-3.5 shrink-0" />
                     称号
@@ -292,7 +293,7 @@ export default function UnifiedPlayerDetailPage({
                 </div>
               )}
               {detail.task && (
-                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <ClipboardListIcon className="size-3.5 shrink-0" />
                     任务
@@ -310,7 +311,7 @@ export default function UnifiedPlayerDetailPage({
                 </div>
               )}
               {detail.playerwarp && (
-                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <MapPinIcon className="size-3.5 shrink-0" />
                     地标
@@ -325,7 +326,7 @@ export default function UnifiedPlayerDetailPage({
                 </div>
               )}
               {detail.playercurrency && (
-                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <CoinsIcon className="size-3.5 shrink-0" />
                     货币
@@ -335,7 +336,7 @@ export default function UnifiedPlayerDetailPage({
                   </span>
                   <span className="truncate text-sm text-muted-foreground">
                     {detail.playercurrency.topType
-                      ? `${detail.playercurrency.topType} ${new Intl.NumberFormat("zh-CN").format(detail.playercurrency.topBalance)}`
+                      ? `${detail.playercurrency.topType} ${formatNumber(detail.playercurrency.topBalance)}`
                       : "—"}
                     {detail.playercurrency.lastChangeAt &&
                       ` · ${detail.playercurrency.lastChangeAt}`}
@@ -343,7 +344,7 @@ export default function UnifiedPlayerDetailPage({
                 </div>
               )}
               {detail.companions && (
-                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                <div className="flex min-w-[168px] flex-1 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <PawPrintIcon className="size-3.5 shrink-0" />
                     宠物
@@ -813,9 +814,7 @@ export default function UnifiedPlayerDetailPage({
                   value:
                     detail.task.coins === null
                       ? "—"
-                      : new Intl.NumberFormat("zh-CN").format(
-                          detail.task.coins,
-                        ),
+                      : formatNumber(detail.task.coins),
                 },
                 {
                   title: "每日完成",
@@ -873,9 +872,7 @@ export default function UnifiedPlayerDetailPage({
                 },
                 {
                   title: "地标总流量",
-                  value: new Intl.NumberFormat("zh-CN").format(
-                    detail.playerwarp.totalTp,
-                  ),
+                  value: formatNumber(detail.playerwarp.totalTp),
                 },
                 {
                   title: "最近创建",
@@ -916,10 +913,7 @@ export default function UnifiedPlayerDetailPage({
                 <>
                   {" "}
                   · 主货币 {detail.playercurrency.topType}{" "}
-                  {new Intl.NumberFormat("zh-CN").format(
-                    detail.playercurrency.topBalance,
-                  )}
-                </>
+                  {formatNumber(detail.playercurrency.topBalance)}</>
               )}
               {detail.playercurrency.lastChangeAt && (
                 <>
@@ -942,9 +936,7 @@ export default function UnifiedPlayerDetailPage({
                 },
                 {
                   title: "主货币余额",
-                  value: new Intl.NumberFormat("zh-CN").format(
-                    detail.playercurrency.topBalance,
-                  ),
+                  value: formatNumber(detail.playercurrency.topBalance),
                 },
                 {
                   title: "最近变动",

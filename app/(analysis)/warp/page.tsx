@@ -35,13 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
 import type { WarpOverview } from "@/lib/plugins/playerwarp/types";
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("zh-CN").format(value);
-}
 
 export default function WarpDashboardPage() {
   const router = useRouter();

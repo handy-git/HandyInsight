@@ -1,7 +1,8 @@
 import { addDays, format, startOfDay, startOfMonth } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
-import { formatDateTime } from "@/lib/common/format";
+import { formatDateTime, num } from "@/lib/common/format";
+import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 import type { Paginated } from "@/lib/common/types";
 import type {
@@ -22,24 +23,9 @@ function toSqlDateTime(date: Date): string {
 }
 const PAGE_SIZE = 20;
 
-/* ---------- 总览与排行：30 秒进程内缓存 ---------- */
+/* ---------- 总览与排行：30 秒进程内缓存（共享实现，命名空间隔离） ---------- */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-
-async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key) as CacheEntry<T> | undefined;
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value;
-  }
-  const value = await loader();
-  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
-  return value;
-}
+const cached = createCache("playersignin");
 
 /* ---------- 总览 ---------- */
 
@@ -56,10 +42,10 @@ export async function getSignInOverview(): Promise<SignInOverview> {
     );
     const row = rows[0] ?? {};
     return {
-      todaySigns: Number(row.todaySigns ?? 0),
-      totalSigns: Number(row.totalSigns ?? 0),
-      totalPlayers: Number(row.totalPlayers ?? 0),
-      totalCards: Number(row.totalCards ?? 0),
+      todaySigns: num(row.todaySigns),
+      totalSigns: num(row.totalSigns),
+      totalPlayers: num(row.totalPlayers),
+      totalCards: num(row.totalCards),
     };
   });
 }
@@ -181,7 +167,7 @@ export async function getSignInPlayers(
       lastSignAt: row.lastSignAt ? formatDateTime(String(row.lastSignAt)) : null,
       cards: Number(row.cards),
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -306,7 +292,7 @@ export async function getSignInRecords(
       signInDate: formatDateTime(String(row.signInDate)),
       rank: Number(row.signRank),
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize,
   };

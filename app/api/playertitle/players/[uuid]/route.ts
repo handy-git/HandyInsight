@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 
 import { getTitlePlayerDetail } from "@/lib/plugins/playertitle/queries";
 import { titleUuidSchema } from "@/lib/plugins/playertitle/schemas";
-import { apiError } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { withPlugin } from "@/lib/server/api";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ uuid: string }> },
 ) {
-  try {
-    await requirePlugin("playertitle");
+  return withPlugin("playertitle", async () => {
     const uuid = titleUuidSchema.parse((await params).uuid);
     const detail = await getTitlePlayerDetail(uuid);
     if (!detail) {
@@ -20,7 +18,5 @@ export async function GET(
       );
     }
     return NextResponse.json(detail);
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

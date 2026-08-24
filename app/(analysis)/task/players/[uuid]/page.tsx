@@ -36,13 +36,17 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson, formatDateTime } from "@/lib/common/format";
+import {
+  fetchJson,
+  formatDateTime,
+  formatNumber,
+} from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
 import type { TaskPlayerDetail, TaskRecord } from "@/lib/plugins/playertask/types";
 import { cn } from "@/lib/utils";
 
 function formatCoins(coins: number): string {
-  return new Intl.NumberFormat("zh-CN").format(coins);
+  return formatNumber(coins);
 }
 
 function Progress({ value }: { value: number }) {

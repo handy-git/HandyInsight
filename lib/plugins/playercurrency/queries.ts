@@ -1,6 +1,6 @@
 import type { RowDataPacket } from "mysql2/promise";
 
-import { formatDateTime } from "@/lib/common/format";
+import { formatDateTime, num } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import {
   currencyLogsQuerySchema,
@@ -15,6 +15,7 @@ import type {
   CurrencyPlayerItem,
   CurrencyPlayerSummary,
 } from "@/lib/plugins/playercurrency/types";
+import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 
 const PAGE_SIZE = 20;
@@ -25,24 +26,9 @@ export {
   currencyUuidSchema,
 };
 
-/* ---------- 总览：30 秒进程内缓存 ---------- */
+/* ---------- 总览：30 秒进程内缓存（共享实现，命名空间隔离） ---------- */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-
-async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key) as CacheEntry<T> | undefined;
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value;
-  }
-  const value = await loader();
-  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
-  return value;
-}
+const cached = createCache("playercurrency");
 
 /** `change` 是 MySQL 保留字，取列必须反引号。 */
 const LOG_SELECT = `SELECT id, player_uuid AS playerUuid, player_name AS playerName,
@@ -57,9 +43,9 @@ function toLogEntry(row: RowDataPacket): CurrencyLogEntry {
     playerUuid: String(row.playerUuid ?? ""),
     playerName: row.playerName ? String(row.playerName) : "未知玩家",
     type: String(row.type ?? ""),
-    oldBalance: Number(row.oldBalance ?? 0),
-    changeValue: Number(row.changeValue ?? 0),
-    balance: Number(row.balance ?? 0),
+    oldBalance: num(row.oldBalance),
+    changeValue: num(row.changeValue),
+    balance: num(row.balance),
     reason: row.reason ? String(row.reason) : null,
     operatorName: row.operatorName ? String(row.operatorName) : null,
     operatorTime: row.operatorTime
@@ -108,21 +94,21 @@ export async function getCurrencyOverview(): Promise<CurrencyOverview> {
 
     const stat = statRows[0] ?? {};
     return {
-      totalTypes: Number(stat.totalTypes ?? 0),
-      holdingPlayers: Number(stat.holdingPlayers ?? 0),
-      totalBalance: Number(stat.totalBalance ?? 0),
-      totalChanges: Number(logCountRows[0]?.total ?? 0),
+      totalTypes: num(stat.totalTypes),
+      holdingPlayers: num(stat.holdingPlayers),
+      totalBalance: num(stat.totalBalance),
+      totalChanges: num(logCountRows[0]?.total),
       typeStats: typeRows.map((row) => ({
         type: String(row.type),
-        players: Number(row.players ?? 0),
-        totalBalance: Number(row.totalBalance ?? 0),
-        totalEarned: Number(row.totalEarned ?? 0),
+        players: num(row.players),
+        totalBalance: num(row.totalBalance),
+        totalEarned: num(row.totalEarned),
       })),
       balanceRanking: rankRows.map((row, index) => ({
         rank: index + 1,
         uuid: String(row.uuid),
         name: row.name ? String(row.name) : String(row.uuid).slice(0, 8),
-        value: Number(row.totalBalance ?? 0),
+        value: num(row.totalBalance),
       })),
       recentLogs: logRows.map(toLogEntry),
     };
@@ -193,11 +179,11 @@ export async function getCurrencyPlayers(
     items: rows.map((row) => ({
       uuid: String(row.uuid),
       name: row.name ? String(row.name) : String(row.uuid).slice(0, 8),
-      typeCount: Number(row.typeCount ?? 0),
-      totalBalance: Number(row.totalBalance ?? 0),
+      typeCount: num(row.typeCount),
+      totalBalance: num(row.totalBalance),
       lastChangeAt: lastChangeMap.get(String(row.uuid)) ?? null,
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -231,8 +217,8 @@ export async function getCurrencyPlayerDetail(
 
   const balances: CurrencyBalanceEntry[] = balanceRows.map((row) => ({
     type: String(row.type ?? ""),
-    balance: Number(row.balance ?? 0),
-    total: Number(row.total ?? 0),
+    balance: num(row.balance),
+    total: num(row.total),
   }));
 
   const nameRow =
@@ -290,7 +276,7 @@ export async function getCurrencyLogs(input: {
 
   return {
     items: rows.map(toLogEntry),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -324,7 +310,7 @@ export async function getCurrencyPlayerSummary(
     ),
   ]);
 
-  const typeCount = Number(statRows[0]?.typeCount ?? 0);
+  const typeCount = num(statRows[0]?.typeCount);
   if (typeCount === 0) {
     return null;
   }
@@ -332,7 +318,7 @@ export async function getCurrencyPlayerSummary(
   return {
     typeCount,
     topType: topRows[0]?.type ? String(topRows[0].type) : null,
-    topBalance: Number(topRows[0]?.balance ?? 0),
+    topBalance: num(topRows[0]?.balance),
     lastChangeAt: logRows[0]?.lastChangeAt
       ? formatDateTime(String(logRows[0].lastChangeAt))
       : null,

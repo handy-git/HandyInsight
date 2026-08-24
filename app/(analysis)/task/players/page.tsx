@@ -43,12 +43,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson, formatDateTime } from "@/lib/common/format";
+import { fetchJson, formatDateTime, formatNumber } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { TaskPlayerItem } from "@/lib/plugins/playertask/types";
 
 function formatCoins(coins: number): string {
-  return new Intl.NumberFormat("zh-CN").format(coins);
+  return formatNumber(coins);
 }
 
 export default function TaskPlayersPage() {

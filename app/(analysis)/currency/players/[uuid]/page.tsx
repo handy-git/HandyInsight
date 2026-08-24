@@ -44,12 +44,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import type { CurrencyPlayerDetail } from "@/lib/plugins/playercurrency/types";
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("zh-CN").format(value);
-}
 
 export default function CurrencyPlayerDetailPage({
   params,

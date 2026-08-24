@@ -4,15 +4,13 @@ import {
   companionsUuidSchema,
   getCompanionsPlayerDetail,
 } from "@/lib/plugins/companions/queries";
-import { apiError } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { withPlugin } from "@/lib/server/api";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ uuid: string }> },
 ) {
-  try {
-    await requirePlugin("companions");
+  return withPlugin("companions", async () => {
     const uuid = companionsUuidSchema.parse((await params).uuid);
     const detail = await getCompanionsPlayerDetail(uuid);
     if (!detail) {
@@ -22,7 +20,5 @@ export async function GET(
       );
     }
     return NextResponse.json(detail);
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

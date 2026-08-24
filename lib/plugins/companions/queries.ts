@@ -1,5 +1,6 @@
 import type { RowDataPacket } from "mysql2/promise";
 
+import { num } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import {
   companionsUuidSchema,
@@ -12,30 +13,16 @@ import type {
   CompanionsPlayerItem,
   CompanionsRankEntry,
 } from "@/lib/plugins/companions/types";
+import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 
 const PAGE_SIZE = 20;
 
 export { companionsPlayersQuerySchema, companionsUuidSchema };
 
-/* ---------- 总览与排行：30 秒进程内缓存 ---------- */
+/* ---------- 总览与排行：30 秒进程内缓存（共享实现，命名空间隔离） ---------- */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-
-async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key) as CacheEntry<T> | undefined;
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value;
-  }
-  const value = await loader();
-  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
-  return value;
-}
+const cached = createCache("companions");
 
 export async function getCompanionsOverview(): Promise<CompanionsOverview> {
   return cached("overview", async () => {
@@ -48,10 +35,10 @@ export async function getCompanionsOverview(): Promise<CompanionsOverview> {
     );
     const row = rows[0] ?? {};
     return {
-      totalPlayers: Number(row.totalPlayers ?? 0),
-      activePlayers: Number(row.activePlayers ?? 0),
-      totalCompanions: Number(row.totalCompanions ?? 0),
-      totalCoins: Number(row.totalCoins ?? 0),
+      totalPlayers: num(row.totalPlayers),
+      activePlayers: num(row.activePlayers),
+      totalCompanions: num(row.totalCompanions),
+      totalCoins: num(row.totalCoins),
     };
   });
 }
@@ -135,10 +122,10 @@ export async function getCompanionsPlayers(
       activeCompanion: row.activeCompanion
         ? String(row.activeCompanion)
         : null,
-      maxAbilityLevel: Number(row.maxAbilityLevel ?? 0),
+      maxAbilityLevel: num(row.maxAbilityLevel),
       coins: row.coins === null || row.coins === undefined ? null : Number(row.coins),
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -193,8 +180,8 @@ export async function getCompanionsPlayerDetail(
       companion: String(row.companion),
       customName: row.customName ? String(row.customName) : null,
       customWeapon: row.customWeapon ? String(row.customWeapon) : null,
-      nameVisible: Number(row.nameVisible ?? 0) === 1,
-      abilityLevel: Number(row.abilityLevel ?? 1),
+      nameVisible: num(row.nameVisible) === 1,
+      abilityLevel: num(row.abilityLevel, 1),
     })),
     equipments: equipmentRows.map((row) => ({
       equipment: String(row.equipment),

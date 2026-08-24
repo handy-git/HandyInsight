@@ -28,13 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateTime, fetchJson } from "@/lib/common/format";
+import { formatDateTime, fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
 import type { TaskOverview } from "@/lib/plugins/playertask/types";
 import { cn } from "@/lib/utils";
 
 function formatCoins(coins: number): string {
-  return new Intl.NumberFormat("zh-CN").format(coins);
+  return formatNumber(coins);
 }
 
 function Progress({ value }: { value: number }) {

@@ -43,7 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { CompanionsPlayerItem } from "@/lib/plugins/companions/types";
 
@@ -167,7 +167,7 @@ export default function CompanionsPlayersPage() {
                     <TableCell className="text-right">
                       {player.coins === null
                         ? "—"
-                        : new Intl.NumberFormat("zh-CN").format(player.coins)}
+                        : formatNumber(player.coins)}
                     </TableCell>
                   </TableRow>
                 ))}

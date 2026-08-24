@@ -43,13 +43,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson, formatDateTime } from "@/lib/common/format";
+import { fetchJson, formatDateTime, formatNumber } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import type { WarpPlayerItem } from "@/lib/plugins/playerwarp/types";
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("zh-CN").format(value);
-}
 
 export default function WarpPlayersPage() {
   const router = useRouter();

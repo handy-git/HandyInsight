@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
 import { McText } from "@/lib/common/mc-text";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import type {
   TitleCoinRankEntry,
   TitleOverview,
@@ -81,9 +81,7 @@ export default function TitleDashboardPage() {
           { title: "佩戴称号玩家", value: overview?.usingPlayers, suffix: "人" },
           {
             title: "称号币总量",
-            value: overview
-              ? new Intl.NumberFormat("zh-CN").format(overview.totalCoins)
-              : undefined,
+            value: overview ? formatNumber(overview.totalCoins) : undefined,
           },
         ].map((card) => (
           <Card key={card.title}>
@@ -215,7 +213,7 @@ export default function TitleDashboardPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        {new Intl.NumberFormat("zh-CN").format(entry.coins)}
+                        {formatNumber(entry.coins)}
                       </TableCell>
                     </TableRow>
                   ))}

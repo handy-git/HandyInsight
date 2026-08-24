@@ -4,18 +4,14 @@ import {
   getRecentLogins,
   getRecentRegistrations,
 } from "@/lib/plugins/authme/queries";
-import { apiError } from "@/lib/server/api";
-import { requirePlugin } from "@/lib/server/mysql";
+import { withPlugin } from "@/lib/server/api";
 
 export async function GET() {
-  try {
-    await requirePlugin("authme");
+  return withPlugin("authme", async () => {
     const [logins, registrations] = await Promise.all([
       getRecentLogins(),
       getRecentRegistrations(),
     ]);
     return NextResponse.json({ logins, registrations });
-  } catch (error) {
-    return apiError(error);
-  }
+  });
 }

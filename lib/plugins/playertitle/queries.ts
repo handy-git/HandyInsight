@@ -1,7 +1,7 @@
 import { addDays, format } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
-import { formatDateTime } from "@/lib/common/format";
+import { formatDateTime, num } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import {
   titleListQuerySchema,
@@ -17,6 +17,7 @@ import type {
   TitlePlayerTitle,
   TitleRankEntry,
 } from "@/lib/plugins/playertitle/types";
+import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 
 const PAGE_SIZE = 20;
@@ -28,24 +29,9 @@ function toSqlDateTime(date: Date): string {
 
 export { titleListQuerySchema, titlePlayersQuerySchema, titleUuidSchema };
 
-/* ---------- 总览与排行：30 秒进程内缓存 ---------- */
+/* ---------- 总览与排行：30 秒进程内缓存（共享实现，命名空间隔离） ---------- */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-
-async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key) as CacheEntry<T> | undefined;
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value;
-  }
-  const value = await loader();
-  cache.set(key, { value, expiresAt: Date.now() + 30_000 });
-  return value;
-}
+const cached = createCache("playertitle");
 
 export async function getTitleOverview(): Promise<TitleOverview> {
   return cached("overview", async () => {
@@ -58,10 +44,10 @@ export async function getTitleOverview(): Promise<TitleOverview> {
     );
     const row = rows[0] ?? {};
     return {
-      totalTitles: Number(row.totalTitles ?? 0),
-      totalPlayers: Number(row.totalPlayers ?? 0),
-      usingPlayers: Number(row.usingPlayers ?? 0),
-      totalCoins: Number(row.totalCoins ?? 0),
+      totalTitles: num(row.totalTitles),
+      totalPlayers: num(row.totalPlayers),
+      usingPlayers: num(row.usingPlayers),
+      totalCoins: num(row.totalCoins),
     };
   });
 }
@@ -100,7 +86,7 @@ export async function getTitleCoinRanking(): Promise<TitleCoinRankEntry[]> {
       rank: index + 1,
       uuid: row.uuid ? String(row.uuid) : null,
       name: String(row.name),
-      coins: Number(row.amount ?? 0),
+      coins: num(row.amount),
     }));
   });
 }
@@ -141,10 +127,10 @@ export async function getTitleList(
       titleName: String(row.titleName),
       buyType: row.buyType ? String(row.buyType) : null,
       amount: row.amount === null || row.amount === undefined ? null : Number(row.amount),
-      day: Number(row.day ?? 0),
-      isHide: Number(row.isHide ?? 0) === 1,
+      day: num(row.day),
+      isHide: num(row.isHide) === 1,
       description: row.description ? String(row.description) : null,
-      position: Number(row.position ?? 0),
+      position: num(row.position),
       particleType: row.particleType ? String(row.particleType) : null,
       buffTypes: row.buffTypes
         ? String(row.buffTypes)
@@ -152,7 +138,7 @@ export async function getTitleList(
             .filter(Boolean)
         : [],
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -216,11 +202,11 @@ export async function getTitlePlayers(
     items: rows.map((row) => ({
       uuid: String(row.uuid),
       name: String(row.name),
-      titleCount: Number(row.titleCount ?? 0),
+      titleCount: num(row.titleCount),
       usingTitle: row.usingTitle ? String(row.usingTitle) : null,
       coins: row.coins === null || row.coins === undefined ? null : Number(row.coins),
     })),
-    total: Number(countRows[0]?.total ?? 0),
+    total: num(countRows[0]?.total),
     page,
     pageSize: PAGE_SIZE,
   };
@@ -262,9 +248,9 @@ export async function getTitlePlayerDetail(
       titleId: row.titleId === null ? null : Number(row.titleId),
       titleName: String(row.titleName),
       expirationTime,
-      isUse: Number(row.isUse ?? 0) === 1,
-      isUseBuff: Number(row.isUseBuff ?? 0) === 1,
-      isUseParticle: Number(row.isUseParticle ?? 0) === 1,
+      isUse: num(row.isUse) === 1,
+      isUseBuff: num(row.isUseBuff) === 1,
+      isUseParticle: num(row.isUseParticle) === 1,
       expired: expirationTime < nowText,
       expiringSoon:
         expirationTime >= nowText && expirationTime < soonThreshold,
@@ -304,7 +290,7 @@ export async function getTitlePlayerSummary(
       [uuid],
     ),
   ]);
-  const total = Number(rows[0]?.total ?? 0);
+  const total = num(rows[0]?.total);
   if (total === 0 && coinRows.length === 0) {
     return null;
   }

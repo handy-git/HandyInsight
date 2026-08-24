@@ -47,17 +47,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
 import type {
   WarpCollectionEntry,
   WarpEntry,
   WarpPlayerDetail,
 } from "@/lib/plugins/playerwarp/types";
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("zh-CN").format(value);
-}
 
 function WarpRow({ warp }: { warp: WarpEntry }) {
   const router = useRouter();

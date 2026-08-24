@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
 import { McText } from "@/lib/common/mc-text";
-import { fetchJson } from "@/lib/common/format";
+import { fetchJson, formatNumber } from "@/lib/common/format";
 import type { TitlePlayerDetail } from "@/lib/plugins/playertitle/types";
 
 export default function TitlePlayerDetailPage({
@@ -147,7 +147,7 @@ export default function TitlePlayerDetailPage({
             value:
               detail.coins === null
                 ? "—"
-                : new Intl.NumberFormat("zh-CN").format(detail.coins),
+                : formatNumber(detail.coins),
           },
           {
             title: "佩戴中",

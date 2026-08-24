@@ -5,6 +5,7 @@ import {
   friendlyMysqlError,
   MysqlNotConfiguredError,
   PluginUnavailableError,
+  requirePlugin,
 } from "@/lib/server/mysql";
 
 /** 统一错误响应：不返回 SQL、密码、数据库地址或服务端路径。 */
@@ -44,4 +45,20 @@ export function apiError(error: unknown): NextResponse {
 
 export function searchParamsObject(request: Request) {
   return Object.fromEntries(new URL(request.url).searchParams.entries());
+}
+
+/**
+ * 插件路由统一封装：先校验插件已启用，再执行业务逻辑，
+ * 异常（含参数校验 / 连接 / 查询错误）统一走 apiError。
+ */
+export async function withPlugin(
+  pluginId: string,
+  handler: () => Promise<NextResponse>,
+): Promise<NextResponse> {
+  try {
+    await requirePlugin(pluginId);
+    return await handler();
+  } catch (error) {
+    return apiError(error);
+  }
 }

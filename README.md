@@ -1,7 +1,5 @@
 # <img src="public/logo.png" alt="HandyInsight" width="36" height="36" align="center"> HandyInsight
 
-[![Deploy with EdgeOne Makers](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Fhandy-git%2FHandyInsight&install-command=pnpm%20install&build-command=pnpm%20build&env=AUTH_USERNAME%2CAUTH_PASSWORD%2CMYSQL_HOST%2CMYSQL_PORT%2CMYSQL_DATABASE%2CMYSQL_USER%2CMYSQL_PASSWORD&env-description=%E9%83%A8%E7%BD%B2%E5%BF%85%E9%9C%80%EF%BC%9AAUTH_USERNAME%2FAUTH_PASSWORD%20%E4%B8%BA%E7%99%BB%E5%BD%95%E8%B4%A6%E5%8F%B7%E4%B8%8E%E5%AF%86%E7%A0%81%EF%BC%88%E5%BF%85%E5%A1%AB%EF%BC%89%EF%BC%9BMYSQL_*%20%E4%B8%BA%20MySQL%20%E7%9B%B4%E8%BF%9E%E9%85%8D%E7%BD%AE%EF%BC%88%E5%8F%AF%E9%80%89%EF%BC%8C%E8%AE%BE%E7%BD%AE%E5%90%8E%E4%BC%98%E5%85%88%E4%BA%8E%E8%AE%BE%E7%BD%AE%E9%A1%B5%E9%85%8D%E7%BD%AE%EF%BC%89&env-link=https%3A%2F%2Fgithub.com%2Fhandy-git%2FHandyInsight%23%E6%9C%AC%E5%9C%B0%E6%B5%8B%E8%AF%95%E9%85%8D%E7%BD%AE)
-
 一个面向 Minecraft 服务器管理者的插件数据分析面板。
 
 连接服务器的 MySQL 数据库后，可以在浏览器中查看玩家活跃、在线时长、签到、宠物、称号等数据。HandyInsight 只读取数据，不会修改游戏数据库。
@@ -75,7 +73,11 @@
 
 ## 快速开始
 
-准备好 Node.js、pnpm 和一个可访问的 MySQL 数据库，然后运行：
+不想在本地搭建环境？可以直接一键部署到 EdgeOne Makers（腾讯云）：
+
+[![使用 EdgeOne Makers 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/makers/new?repository-url=https%3A%2F%2Fgithub.com%2Fhandy-git%2FHandyInsight&install-command=pnpm%20install&build-command=pnpm%20build&env=AUTH_USERNAME%2CAUTH_PASSWORD%2CMYSQL_HOST%2CMYSQL_PORT%2CMYSQL_DATABASE%2CMYSQL_USER%2CMYSQL_PASSWORD&env-description=%E9%83%A8%E7%BD%B2%E5%BF%85%E9%9C%80%EF%BC%9AAUTH_USERNAME%2FAUTH_PASSWORD%20%E4%B8%BA%E7%99%BB%E5%BD%95%E8%B4%A6%E5%8F%B7%E4%B8%8E%E5%AF%86%E7%A0%81%EF%BC%88%E5%BF%85%E5%A1%AB%EF%BC%89%EF%BC%9BMYSQL_*%20%E4%B8%BA%20MySQL%20%E7%9B%B4%E8%BF%9E%E9%85%8D%E7%BD%AE%EF%BC%88%E5%8F%AF%E9%80%89%EF%BC%8C%E8%AE%BE%E7%BD%AE%E5%90%8E%E4%BC%98%E5%85%88%E4%BA%8E%E8%AE%BE%E7%BD%AE%E9%A1%B5%E9%85%8D%E7%BD%AE%EF%BC%89&env-link=https%3A%2F%2Fgithub.com%2Fhandy-git%2FHandyInsight%23%E6%9C%AC%E5%9C%B0%E6%B5%8B%E8%AF%95%E9%85%8D%E7%BD%AE)
+
+或者本地运行，准备好 Node.js、pnpm 和一个可访问的 MySQL 数据库，然后运行：
 
 ```bash
 pnpm install

@@ -15,6 +15,7 @@ import {
 import { getTitlePlayerSummary } from "@/lib/plugins/playertitle/queries";
 import { getTaskPlayerSummary } from "@/lib/plugins/playertask/queries";
 import { getWarpPlayerSummary } from "@/lib/plugins/playerwarp/queries";
+import { getCurrencyPlayerSummary } from "@/lib/plugins/playercurrency/queries";
 import {
   buildPlayerRegistry,
   type RegistryEntry,
@@ -77,6 +78,7 @@ export async function getUnifiedPlayers(
   const titleCoins = new Map<string, number>();
   const taskCoins = new Map<string, number>();
   const warpCounts = new Map<string, number>();
+  const currencyTypes = new Map<string, number>();
 
   if (enabled.has("playertime")) {
     const onlineRows = await query<RowDataPacket[]>(
@@ -158,6 +160,18 @@ export async function getUnifiedPlayers(
     }
   }
 
+  if (enabled.has("playercurrency")) {
+    const countRows = await query<RowDataPacket[]>(
+      `SELECT player_uuid AS uuid, COUNT(*) AS total
+         FROM player_currency
+        WHERE player_uuid IS NOT NULL
+        GROUP BY player_uuid`,
+    );
+    for (const row of countRows) {
+      currencyTypes.set(String(row.uuid), Number(row.total));
+    }
+  }
+
   const nameToUuid = new Map<string, string>();
   for (const entry of registry) {
     if (entry.uuid) {
@@ -182,6 +196,7 @@ export async function getUnifiedPlayers(
       titleCoins: uuid ? (titleCoins.get(uuid) ?? null) : null,
       taskCoins: uuid ? (taskCoins.get(uuid) ?? null) : null,
       warpCount: uuid ? (warpCounts.get(uuid) ?? 0) : 0,
+      currencyTypes: uuid ? (currencyTypes.get(uuid) ?? 0) : 0,
     };
   });
 
@@ -232,6 +247,7 @@ export async function getUnifiedPlayerDetail(
   let playertitle: UnifiedPlayerDetail["playertitle"] = null;
   let task: UnifiedPlayerDetail["task"] = null;
   let playerwarp: UnifiedPlayerDetail["playerwarp"] = null;
+  let playercurrency: UnifiedPlayerDetail["playercurrency"] = null;
   let online = false;
 
   if (uuid && enabled.has("playertime")) {
@@ -365,6 +381,22 @@ export async function getUnifiedPlayerDetail(
     );
   }
 
+  if (uuid && enabled.has("playercurrency")) {
+    tasks.push(
+      (async () => {
+        const summary = await getCurrencyPlayerSummary(uuid);
+        if (summary) {
+          playercurrency = {
+            typeCount: summary.typeCount,
+            topType: summary.topType,
+            topBalance: summary.topBalance,
+            lastChangeAt: summary.lastChangeAt,
+          };
+        }
+      })(),
+    );
+  }
+
   await Promise.all(tasks);
 
   return {
@@ -382,6 +414,7 @@ export async function getUnifiedPlayerDetail(
     playertitle,
     task,
     playerwarp,
+    playercurrency,
   };
 }
 

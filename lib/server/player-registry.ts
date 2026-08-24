@@ -119,6 +119,22 @@ async function fetchPlayerWarp(): Promise<RowDataPacket[]> {
   );
 }
 
+async function fetchPlayerCurrency(): Promise<RowDataPacket[]> {
+  // 货币表无时间列，最近活跃取流水表的最大变更时间
+  return query<RowDataPacket[]>(
+    `SELECT pc.player_uuid AS uuid, MAX(pc.player_name) AS name,
+            MAX(cl.lastAt) AS lastActiveAt
+       FROM player_currency pc
+       LEFT JOIN (
+         SELECT player_uuid, MAX(operator_time) AS lastAt
+           FROM player_currency_log
+          GROUP BY player_uuid
+       ) cl ON cl.player_uuid = pc.player_uuid
+      WHERE pc.player_uuid IS NOT NULL
+      GROUP BY pc.player_uuid`,
+  );
+}
+
 /** 构建玩家目录（uuid → 档案；AuthMe 独有玩家以虚拟键挂载）。 */
 export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
   if (cache && cache.expiresAt > Date.now()) {
@@ -273,6 +289,36 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playerwarp"],
+          lastActiveAt: row.lastActiveAt
+            ? formatDateTime(String(row.lastActiveAt))
+            : null,
+        });
+      }
+    }
+  }
+
+  if (enabled.has("playercurrency")) {
+    for (const row of await fetchPlayerCurrency()) {
+      const uuid = String(row.uuid);
+      const name = row.name ? String(row.name) : uuid.slice(0, 8);
+      nameToUuid.set(normalizeName(name), uuid);
+      const existing = byUuid.get(uuid);
+      if (existing) {
+        existing.sources.push("playercurrency");
+        if (
+          row.lastActiveAt &&
+          (!existing.lastActiveAt ||
+            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
+        ) {
+          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
+        }
+      } else {
+        byUuid.set(uuid, {
+          key: uuid,
+          uuid,
+          name,
+          registeredAt: null,
+          sources: ["playercurrency"],
           lastActiveAt: row.lastActiveAt
             ? formatDateTime(String(row.lastActiveAt))
             : null,

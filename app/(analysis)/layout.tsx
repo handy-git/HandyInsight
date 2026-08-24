@@ -9,6 +9,7 @@ import {
   CalendarCheckIcon,
   ChevronDownIcon,
   ClipboardListIcon,
+  CoinsIcon,
   LayoutDashboardIcon,
   MapPinIcon,
   MedalIcon,
@@ -112,6 +113,14 @@ const PLUGIN_NAV: Record<
       { href: "/warp", label: "地标总览", icon: MapPinIcon },
       { href: "/warp/list", label: "地标库", icon: MapPinIcon },
       { href: "/warp/players", label: "地标玩家", icon: UsersIcon },
+    ],
+  },
+  playercurrency: {
+    label: "PlayerCurrency · 货币",
+    items: [
+      { href: "/currency", label: "货币总览", icon: CoinsIcon },
+      { href: "/currency/logs", label: "货币流水", icon: CoinsIcon },
+      { href: "/currency/players", label: "货币玩家", icon: UsersIcon },
     ],
   },
 };

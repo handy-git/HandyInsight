@@ -14,6 +14,7 @@ import {
   CalendarCheckIcon,
   ClipboardListIcon,
   ClockIcon,
+  CoinsIcon,
   LogInIcon,
   MapPinIcon,
   MedalIcon,
@@ -254,8 +255,9 @@ export default function UnifiedPlayerDetailPage({
             detail.companions ||
             detail.authme ||
             detail.task ||
-            detail.playerwarp) && (
-            <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            detail.playerwarp ||
+            detail.playercurrency) && (
+            <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               {detail.authme && (
                 <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -319,6 +321,24 @@ export default function UnifiedPlayerDetailPage({
                   <span className="truncate text-sm text-muted-foreground">
                     上架 {detail.playerwarp.displayedCount} 个 · 流量{" "}
                     {detail.playerwarp.totalTp} 次
+                  </span>
+                </div>
+              )}
+              {detail.playercurrency && (
+                <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-3 py-2.5">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CoinsIcon className="size-3.5 shrink-0" />
+                    货币
+                  </span>
+                  <span className="text-sm font-medium">
+                    {detail.playercurrency.typeCount} 种
+                  </span>
+                  <span className="truncate text-sm text-muted-foreground">
+                    {detail.playercurrency.topType
+                      ? `${detail.playercurrency.topType} ${new Intl.NumberFormat("zh-CN").format(detail.playercurrency.topBalance)}`
+                      : "—"}
+                    {detail.playercurrency.lastChangeAt &&
+                      ` · ${detail.playercurrency.lastChangeAt}`}
                   </span>
                 </div>
               )}
@@ -870,6 +890,76 @@ export default function UnifiedPlayerDetailPage({
                     <CardTitle
                       className={
                         card.title === "最近创建"
+                          ? "text-lg whitespace-nowrap"
+                          : "text-2xl"
+                      }
+                    >
+                      {card.value}
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {detail.playercurrency && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CoinsIcon className="size-4 text-muted-foreground" />
+              货币 · PlayerCurrency
+            </CardTitle>
+            <CardDescription>
+              持有 {detail.playercurrency.typeCount} 种货币
+              {detail.playercurrency.topType && (
+                <>
+                  {" "}
+                  · 主货币 {detail.playercurrency.topType}{" "}
+                  {new Intl.NumberFormat("zh-CN").format(
+                    detail.playercurrency.topBalance,
+                  )}
+                </>
+              )}
+              {detail.playercurrency.lastChangeAt && (
+                <>
+                  {" "}
+                  · 最近变动 {formatDateTime(detail.playercurrency.lastChangeAt)}
+                </>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  title: "货币类型",
+                  value: `${detail.playercurrency.typeCount} 种`,
+                },
+                {
+                  title: "余额最高货币",
+                  value: detail.playercurrency.topType ?? "—",
+                },
+                {
+                  title: "主货币余额",
+                  value: new Intl.NumberFormat("zh-CN").format(
+                    detail.playercurrency.topBalance,
+                  ),
+                },
+                {
+                  title: "最近变动",
+                  value: detail.playercurrency.lastChangeAt
+                    ? formatDateTime(detail.playercurrency.lastChangeAt)
+                    : "—",
+                },
+              ].map((card) => (
+                <Card key={card.title}>
+                  <CardHeader>
+                    <CardDescription>{card.title}</CardDescription>
+                    <CardTitle
+                      className={
+                        card.title === "最近变动" ||
+                        card.title === "余额最高货币"
                           ? "text-lg whitespace-nowrap"
                           : "text-2xl"
                       }

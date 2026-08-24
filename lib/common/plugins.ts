@@ -72,6 +72,13 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     tables: ["warp_player", "warp_tp_player"],
     landing: "/warp",
   },
+  {
+    id: "playercurrency",
+    name: "PlayerCurrency",
+    description: "货币系统",
+    tables: ["player_currency", "player_currency_log"],
+    landing: "/currency",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

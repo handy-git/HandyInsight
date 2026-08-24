@@ -22,6 +22,8 @@ export interface UnifiedPlayerItem {
   taskCoins: number | null;
   /** 创建地标数（PlayerWarp） */
   warpCount: number;
+  /** 持有货币类型数（PlayerCurrency） */
+  currencyTypes: number;
 }
 
 export interface UnifiedPlayerDetail {
@@ -98,6 +100,16 @@ export interface UnifiedPlayerDetail {
     totalTp: number;
     /** 最近创建地标时间 */
     lastCreateAt: string | null;
+  } | null;
+  playercurrency: {
+    /** 持有货币类型数 */
+    typeCount: number;
+    /** 余额最高的货币类型 */
+    topType: string | null;
+    /** 对应余额 */
+    topBalance: number;
+    /** 最近货币变动时间 */
+    lastChangeAt: string | null;
   } | null;
 }
 

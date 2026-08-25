@@ -15,6 +15,7 @@ import {
   ClipboardListIcon,
   ClockIcon,
   CoinsIcon,
+  CrownIcon,
   HammerIcon,
   LogInIcon,
   MapPinIcon,
@@ -99,6 +100,7 @@ const EVENT_ICONS: Record<TimelineEvent["type"], typeof LogInIcon> = {
   login: LogInIcon,
   session: ClockIcon,
   signin: CalendarCheckIcon,
+  guild: CrownIcon,
 };
 
 export default function UnifiedPlayerDetailPage({
@@ -260,7 +262,8 @@ export default function UnifiedPlayerDetailPage({
             detail.task ||
             detail.playerwarp ||
             detail.playercurrency ||
-            detail.intensify) && (
+            detail.intensify ||
+            detail.guild) && (
             <div className="mt-4 flex flex-wrap gap-2.5">
               {detail.authme && (
                 <StatTile
@@ -339,6 +342,16 @@ export default function UnifiedPlayerDetailPage({
                   label="强化"
                   value={`${detail.intensify.totalAttempts} 次`}
                   hint={`成功率 ${detail.intensify.successRate ?? "—"}% · 最高 +${detail.intensify.maxLevel}`}
+                />
+              )}
+              {detail.guild && (
+                <StatTile
+                  icon={CrownIcon}
+                  label="公会"
+                  value={
+                    <McText text={detail.guild.guildName} />
+                  }
+                  hint={`${detail.guild.role} · 总贡献 ${formatNumber(detail.guild.totalMoney)}`}
                 />
               )}
             </div>
@@ -994,6 +1007,64 @@ export default function UnifiedPlayerDetailPage({
                   </CardHeader>
                 </Card>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {detail.guild && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CrownIcon className="size-4 text-muted-foreground" />
+              公会 · PlayerGuild
+            </CardTitle>
+            <CardDescription>
+              所属{" "}
+              <Link
+                href={`/guild/list/${detail.guild.guildId}`}
+                className="underline underline-offset-2"
+              >
+                <McText text={detail.guild.guildName} />
+              </Link>{" "}
+              · 等级 {detail.guild.guildLevel} · {detail.guild.role}
+              {detail.guild.joinTime && (
+                <> · 加入于 {formatDateTime(detail.guild.joinTime)}</>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  title: "当前贡献",
+                  value: formatNumber(detail.guild.money),
+                },
+                {
+                  title: "周贡献",
+                  value: formatNumber(detail.guild.weekMoney),
+                },
+                {
+                  title: "总贡献",
+                  value: formatNumber(detail.guild.totalMoney),
+                },
+                {
+                  title: "矿石",
+                  value: `${formatNumber(detail.guild.ore)} 个`,
+                },
+              ].map((card) => (
+                <Card key={card.title}>
+                  <CardHeader>
+                    <CardDescription>{card.title}</CardDescription>
+                    <CardTitle className="text-2xl">{card.value}</CardTitle>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 text-sm text-muted-foreground">
+              <span>
+                公会战击杀 {formatNumber(detail.guild.kill)} 次 · 死亡{" "}
+                {formatNumber(detail.guild.die)} 次
+              </span>
             </div>
           </CardContent>
         </Card>

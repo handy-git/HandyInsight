@@ -23,6 +23,7 @@ import { getTaskPlayerSummary } from "@/lib/plugins/playertask/queries";
 import { getWarpPlayerSummary } from "@/lib/plugins/playerwarp/queries";
 import { getCurrencyPlayerSummary } from "@/lib/plugins/playercurrency/queries";
 import { getIntensifyPlayerDetail } from "@/lib/plugins/playerintensify/queries";
+import { getGuildPlayerSummary } from "@/lib/plugins/playerguild/queries";
 import { createCache } from "@/lib/server/cache";
 import {
   buildPlayerRegistry,
@@ -73,6 +74,7 @@ interface PlayerStatsSnapshot {
   warpCounts: ReadonlyMap<string, number>;
   currencyTypes: ReadonlyMap<string, number>;
   intensifyAttempts: ReadonlyMap<string, number>;
+  guildNames: ReadonlyMap<string, string>;
 }
 
 /* ---------- 统计源注册表：接入玩家列表 ---------- */
@@ -226,6 +228,23 @@ const STAT_SOURCES: readonly StatSource[] = [
       return { intensifyAttempts };
     },
   },
+  {
+    pluginId: "playerguild",
+    load: async () => {
+      const guildNames = new Map<string, string>();
+      const rows = await query<RowDataPacket[]>(
+        `SELECT gp.player_uuid AS uuid, gi.guild_name AS guildName
+           FROM guild_player gp
+           JOIN guild_info gi ON gi.id = gp.guild_info_id`,
+      );
+      for (const row of rows) {
+        if (row.uuid !== null && row.guildName) {
+          guildNames.set(String(row.uuid), String(row.guildName));
+        }
+      }
+      return { guildNames };
+    },
+  },
 ];
 
 /** 空快照：所有统计键的缺省容器，供未启用 / 装载失败的源保持空值。 */
@@ -242,6 +261,7 @@ function emptyStats(registry: RegistryEntry[]): PlayerStatsSnapshot {
     warpCounts: new Map(),
     currencyTypes: new Map(),
     intensifyAttempts: new Map(),
+    guildNames: new Map(),
   };
 }
 
@@ -319,6 +339,7 @@ export async function getUnifiedPlayers(
       warpCount: uuid ? (stats.warpCounts.get(uuid) ?? 0) : 0,
       currencyTypes: uuid ? (stats.currencyTypes.get(uuid) ?? 0) : 0,
       intensifyAttempts: uuid ? (stats.intensifyAttempts.get(uuid) ?? 0) : 0,
+      guildName: uuid ? (stats.guildNames.get(uuid) ?? null) : null,
     };
   });
 
@@ -522,6 +543,27 @@ const DETAIL_SOURCES: readonly DetailSource[] = [
       }
     },
   },
+  {
+    pluginId: "playerguild",
+    collect: async ({ uuid, detail }) => {
+      const summary = await getGuildPlayerSummary(uuid);
+      if (summary) {
+        detail.guild = {
+          guildId: summary.guildId,
+          guildName: summary.guildName,
+          guildLevel: summary.guildLevel,
+          role: summary.role,
+          money: summary.money,
+          weekMoney: summary.weekMoney,
+          totalMoney: summary.totalMoney,
+          ore: summary.ore,
+          kill: summary.kill,
+          die: summary.die,
+          joinTime: summary.joinTime,
+        };
+      }
+    },
+  },
 ];
 
 /** 统一玩家详情（30 秒缓存）：并行编排各插件已有查询。 */
@@ -556,6 +598,7 @@ async function loadUnifiedPlayerDetail(
     playerwarp: null,
     playercurrency: null,
     intensify: null,
+    guild: null,
   };
 
   const active = DETAIL_SOURCES.filter(
@@ -636,6 +679,19 @@ const TIMELINE_SOURCES: readonly TimelineSource[] = [
           at: account.lastLoginAt,
           type: "login",
           text: `通过 AuthMe 登录${account.ip ? `（IP ${account.ip}）` : ""}`,
+        });
+      }
+    },
+  },
+  {
+    pluginId: "playerguild",
+    collect: async ({ uuid, events }) => {
+      const summary = await getGuildPlayerSummary(uuid);
+      if (summary?.joinTime) {
+        events.push({
+          at: summary.joinTime,
+          type: "guild",
+          text: `加入公会 ${summary.guildName}`,
         });
       }
     },

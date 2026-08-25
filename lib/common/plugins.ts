@@ -86,6 +86,13 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     tables: ["player_intensify"],
     landing: "/intensify",
   },
+  {
+    id: "playerguild",
+    name: "PlayerGuild",
+    description: "公会系统",
+    tables: ["guild_info", "guild_player"],
+    landing: "/guild",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

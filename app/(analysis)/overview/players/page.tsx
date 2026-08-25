@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { playerAvatarUrl } from "@/lib/common/avatar";
+import { McText } from "@/lib/common/mc-text";
 import {
   fetchJson,
   formatDateTime,
@@ -175,6 +176,7 @@ export default function UnifiedPlayersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>玩家</TableHead>
+                  <TableHead>公会</TableHead>
                   <TableHead>注册时间</TableHead>
                   <TableHead className="text-right">总时长</TableHead>
                   <TableHead className="text-right">签到</TableHead>
@@ -207,6 +209,15 @@ export default function UnifiedPlayersPage() {
                         <span className="font-medium">{player.name}</span>
                         {player.online && <Badge>在线</Badge>}
                       </span>
+                    </TableCell>
+                    <TableCell className="max-w-32">
+                      {player.guildName ? (
+                        <span className="block truncate" title={player.guildName}>
+                          <McText text={player.guildName} />
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>{formatDateTime(player.registeredAt) || "—"}</TableCell>
                     <TableCell className="text-right">

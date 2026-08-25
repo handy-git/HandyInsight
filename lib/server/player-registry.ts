@@ -145,6 +145,17 @@ async function fetchPlayerIntensify(): Promise<RowDataPacket[]> {
   );
 }
 
+async function fetchGuildPlayer(): Promise<RowDataPacket[]> {
+  // 公会成员表带最近上线时间，提供来源/名称/最近活跃
+  return query<RowDataPacket[]>(
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name,
+            MAX(last_join_time) AS lastActiveAt
+       FROM guild_player
+      WHERE player_uuid IS NOT NULL
+      GROUP BY player_uuid`,
+  );
+}
+
 /** 插件已启用则执行查询，否则返回空数组，便于并行取数后统一合并。 */
 function fetchWhen(
   enabled: Set<string>,
@@ -173,6 +184,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
     warpRows,
     currencyRows,
     intensifyRows,
+    guildRows,
     authmeRows,
   ] = await Promise.all([
     fetchWhen(enabled, "playertime", fetchPlayerTime),
@@ -183,6 +195,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
     fetchWhen(enabled, "playerwarp", fetchPlayerWarp),
     fetchWhen(enabled, "playercurrency", fetchPlayerCurrency),
     fetchWhen(enabled, "playerintensify", fetchPlayerIntensify),
+    fetchWhen(enabled, "playerguild", fetchGuildPlayer),
     fetchWhen(enabled, "authme", fetchAuthme),
   ]);
 
@@ -386,6 +399,36 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           registeredAt: null,
           sources: ["playerintensify"],
           lastActiveAt: null,
+        });
+      }
+    }
+  }
+
+  if (enabled.has("playerguild")) {
+    for (const row of guildRows) {
+      const uuid = String(row.uuid);
+      const name = row.name ? String(row.name) : uuid.slice(0, 8);
+      nameToUuid.set(normalizeName(name), uuid);
+      const existing = byUuid.get(uuid);
+      if (existing) {
+        existing.sources.push("playerguild");
+        if (
+          row.lastActiveAt &&
+          (!existing.lastActiveAt ||
+            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
+        ) {
+          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
+        }
+      } else {
+        byUuid.set(uuid, {
+          key: uuid,
+          uuid,
+          name,
+          registeredAt: null,
+          sources: ["playerguild"],
+          lastActiveAt: row.lastActiveAt
+            ? formatDateTime(String(row.lastActiveAt))
+            : null,
         });
       }
     }

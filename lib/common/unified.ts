@@ -31,6 +31,8 @@ export interface UnifiedPlayerItem {
   currencyTypes: number;
   /** 强化总次数（PlayerIntensify） */
   intensifyAttempts: number;
+  /** 所属公会名（PlayerGuild），未加入为 null */
+  guildName: string | null;
 }
 
 export interface UnifiedPlayerDetail {
@@ -138,12 +140,36 @@ export interface UnifiedPlayerDetail {
     /** 最高装备材质名字 */
     materialName: string | null;
   } | null;
+  guild: {
+    /** 公会 id */
+    guildId: number;
+    /** 公会名称 */
+    guildName: string;
+    /** 公会等级 */
+    guildLevel: number;
+    /** 角色标签（会长 / 管理员 / 成员） */
+    role: string;
+    /** 当前贡献度 */
+    money: number;
+    /** 周贡献度 */
+    weekMoney: number;
+    /** 总贡献度 */
+    totalMoney: number;
+    /** 矿石 */
+    ore: number;
+    /** 公会战击杀 */
+    kill: number;
+    /** 公会战死亡 */
+    die: number;
+    /** 加入公会时间 */
+    joinTime: string | null;
+  } | null;
 }
 
 export interface TimelineEvent {
   /** yyyy-MM-dd HH:mm:ss */
   at: string;
-  type: "login" | "session" | "signin";
+  type: "login" | "session" | "signin" | "guild";
   /** 事件描述 */
   text: string;
 }

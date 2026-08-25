@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   ClipboardListIcon,
   CoinsIcon,
+  CrownIcon,
   HammerIcon,
   LayoutDashboardIcon,
   MapPinIcon,
@@ -18,6 +19,7 @@ import {
   PawPrintIcon,
   SettingsIcon,
   ShieldCheckIcon,
+  SwordsIcon,
   UsersIcon,
 } from "lucide-react";
 
@@ -130,6 +132,13 @@ const PLUGIN_NAV: Record<
     items: [
       { href: "/intensify", label: "强化总览", icon: HammerIcon },
       { href: "/intensify/players", label: "强化玩家", icon: UsersIcon },
+    ],
+  },
+  playerguild: {
+    label: "PlayerGuild · 公会",
+    items: [
+      { href: "/guild", label: "公会总览", icon: CrownIcon },
+      { href: "/guild/list", label: "公会列表", icon: SwordsIcon },
     ],
   },
 };

@@ -4,18 +4,31 @@ import { num } from "@/lib/common/format";
 import type { Paginated } from "@/lib/common/types";
 import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
+import type { SortOrder } from "@/lib/common/sort";
 import type {
   IntensifyOverview,
   IntensifyPlayerDetail,
   IntensifyPlayerItem,
   IntensifyRankingEntry,
   IntensifyRankingType,
+  IntensifySortField,
 } from "@/lib/plugins/playerintensify/types";
 
 const PAGE_SIZE = 20;
 
 /** sum 为 MySQL 聚合函数名，作列名使用时必须反引号转义。 */
 const SUM_COL = "`sum`";
+
+/** 列表排序字段 → SQL ORDER BY 表达式（白名单，安全拼接方向后缀）。 */
+const SORT_EXPR: Record<IntensifySortField, string> = {
+  attempts: SUM_COL,
+  succeed: "succeed_num",
+  failure: "failure_num",
+  // sum=0 时除法返回 NULL，用 IF 兜底为 -1 使其排在最低（成功率最低）
+  rate: `IF(${SUM_COL} > 0, succeed_num / ${SUM_COL}, -1)`,
+  level: "max_level",
+  name: "player_name",
+};
 
 /** 百分比（保留 1 位小数）；分母为 0 返回 null。 */
 function rate(numerator: number, denominator: number): number | null {
@@ -92,6 +105,8 @@ export async function getIntensifyRanking(
 export async function getIntensifyPlayers(
   keyword: string,
   page: number,
+  sort: IntensifySortField = "attempts",
+  order: SortOrder = "desc",
 ): Promise<Paginated<IntensifyPlayerItem>> {
   const like = `%${keyword.toLowerCase()}%`;
   const offset = (page - 1) * PAGE_SIZE;
@@ -100,6 +115,7 @@ export async function getIntensifyPlayers(
     : "";
   const baseParams = keyword ? [like, like] : [];
 
+  const orderBy = `${SORT_EXPR[sort]} ${order.toUpperCase()}, id ASC`;
   const rows = await query<RowDataPacket[]>(
     `SELECT player_uuid AS uuid,
             player_name AS name,
@@ -111,7 +127,7 @@ export async function getIntensifyPlayers(
             max_level_name AS maxLevelName
        FROM player_intensify
        ${where}
-      ORDER BY ${SUM_COL} DESC, max_level DESC
+      ORDER BY ${orderBy}
       LIMIT ? OFFSET ?`,
     [...baseParams, PAGE_SIZE, offset],
   );

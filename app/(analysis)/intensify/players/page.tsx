@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircleIcon, SearchIcon, UsersIcon } from "lucide-react";
 
+import { SortableHead } from "@/components/sortable-head";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -43,9 +44,14 @@ import {
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
 import { fetchJson } from "@/lib/common/format";
+import { toggleSort, type SortOrder } from "@/lib/common/sort";
 import { McText } from "@/lib/common/mc-text";
 import type { Paginated } from "@/lib/common/types";
-import type { IntensifyPlayerItem } from "@/lib/plugins/playerintensify/types";
+import {
+  INTENSIFY_DEFAULT_ORDER,
+  type IntensifyPlayerItem,
+  type IntensifySortField,
+} from "@/lib/plugins/playerintensify/types";
 
 function rateText(rate: number | null): string {
   return rate === null ? "—" : `${rate}%`;
@@ -56,24 +62,51 @@ export default function IntensifyPlayersPage() {
   const [input, setInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<IntensifySortField>("attempts");
+  const [order, setOrder] = useState<SortOrder>("desc");
   const [data, setData] = useState<Paginated<IntensifyPlayerItem> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback((nextKeyword: string, nextPage: number) => {
-    fetchJson<Paginated<IntensifyPlayerItem>>(
-      `/api/intensify/players?keyword=${encodeURIComponent(nextKeyword)}&page=${nextPage}`,
-    )
-      .then(setData)
-      .catch((err: Error) => setError(err.message));
-  }, []);
+  const load = useCallback(
+    (
+      nextKeyword: string,
+      nextPage: number,
+      nextSort: IntensifySortField,
+      nextOrder: SortOrder,
+    ) => {
+      const params = new URLSearchParams({
+        keyword: nextKeyword,
+        page: String(nextPage),
+        sort: nextSort,
+        order: nextOrder,
+      });
+      fetchJson<Paginated<IntensifyPlayerItem>>(
+        `/api/intensify/players?${params}`,
+      )
+        .then(setData)
+        .catch((err: Error) => setError(err.message));
+    },
+    [],
+  );
 
   useEffect(() => {
-    load(keyword, page);
-  }, [keyword, page, load]);
+    load(keyword, page, sort, order);
+  }, [keyword, page, sort, order, load]);
 
   function handleSearch() {
     setPage(1);
     setKeyword(input.trim());
+  }
+
+  function handleSort(field: IntensifySortField) {
+    const next = toggleSort(
+      { field: sort, order },
+      field,
+      INTENSIFY_DEFAULT_ORDER[field],
+    );
+    setSort(next.field);
+    setOrder(next.order);
+    setPage(1);
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
@@ -82,7 +115,9 @@ export default function IntensifyPlayersPage() {
     <Card>
       <CardHeader>
         <CardTitle>强化玩家</CardTitle>
-        <CardDescription>按玩家名称或 UUID 搜索，点击行进入强化详情</CardDescription>
+        <CardDescription>
+          按玩家名称或 UUID 搜索，点击表头排序，点击行进入强化详情
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <InputGroup className="max-w-sm">
@@ -127,12 +162,53 @@ export default function IntensifyPlayersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>玩家</TableHead>
-                  <TableHead className="text-right">强化总次数</TableHead>
-                  <TableHead className="text-right">成功</TableHead>
-                  <TableHead className="text-right">失败</TableHead>
-                  <TableHead className="text-right">成功率</TableHead>
-                  <TableHead className="text-right">最高等级</TableHead>
+                  <SortableHead<IntensifySortField>
+                    label="玩家"
+                    field="name"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
+                  <SortableHead<IntensifySortField>
+                    label="强化总次数"
+                    field="attempts"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<IntensifySortField>
+                    label="成功"
+                    field="succeed"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<IntensifySortField>
+                    label="失败"
+                    field="failure"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<IntensifySortField>
+                    label="成功率"
+                    field="rate"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<IntensifySortField>
+                    label="最高等级"
+                    field="level"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
                   <TableHead>最高装备</TableHead>
                 </TableRow>
               </TableHeader>
@@ -185,7 +261,7 @@ export default function IntensifyPlayersPage() {
             </Table>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                共 {data.total} 名玩家，第 {data.page} / {totalPages} 页
+                共 {data.total} 名玩家，第 {page} / {totalPages} 页
               </span>
               <Pagination>
                 <PaginationContent>

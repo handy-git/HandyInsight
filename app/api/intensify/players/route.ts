@@ -6,9 +6,9 @@ import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   return withPlugin("playerintensify", async () => {
-    const { keyword, page } = intensifyPlayersQuerySchema.parse(
+    const { keyword, page, sort, order } = intensifyPlayersQuerySchema.parse(
       searchParamsObject(request),
     );
-    return NextResponse.json(await getIntensifyPlayers(keyword, page));
+    return NextResponse.json(await getIntensifyPlayers(keyword, page, sort, order));
   });
 }

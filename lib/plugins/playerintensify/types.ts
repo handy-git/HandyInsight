@@ -33,6 +33,27 @@ export interface IntensifyRankingEntry {
   maxLevelName: string | null;
 }
 
+import type { SortOrder } from "@/lib/common/sort";
+
+/** 强化玩家列表可排序字段。 */
+export type IntensifySortField =
+  | "attempts"
+  | "succeed"
+  | "failure"
+  | "rate"
+  | "level"
+  | "name";
+
+/** 各字段首次点击时的默认方向（数值降序，名称升序）。 */
+export const INTENSIFY_DEFAULT_ORDER: Record<IntensifySortField, SortOrder> = {
+  attempts: "desc",
+  succeed: "desc",
+  failure: "desc",
+  rate: "desc",
+  level: "desc",
+  name: "asc",
+};
+
 /** 强化玩家列表条目。 */
 export interface IntensifyPlayerItem {
   uuid: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircleIcon, SearchIcon, UsersIcon } from "lucide-react";
 
@@ -66,32 +66,37 @@ export default function IntensifyPlayersPage() {
   const [order, setOrder] = useState<SortOrder>("desc");
   const [data, setData] = useState<Paginated<IntensifyPlayerItem> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const load = useCallback(
-    (
-      nextKeyword: string,
-      nextPage: number,
-      nextSort: IntensifySortField,
-      nextOrder: SortOrder,
-    ) => {
-      const params = new URLSearchParams({
-        keyword: nextKeyword,
-        page: String(nextPage),
-        sort: nextSort,
-        order: nextOrder,
-      });
-      fetchJson<Paginated<IntensifyPlayerItem>>(
-        `/api/intensify/players?${params}`,
-      )
-        .then(setData)
-        .catch((err: Error) => setError(err.message));
-    },
-    [],
-  );
-
+  // 搜索/翻页/排序任一条件变化即重新请求。
+  // cleanup 的 cancelled 标志丢弃过期响应（快速切换时旧请求结果不覆盖新数据）。
   useEffect(() => {
-    load(keyword, page, sort, order);
-  }, [keyword, page, sort, order, load]);
+    let cancelled = false;
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        keyword,
+        page: String(page),
+        sort,
+        order,
+      });
+      try {
+        const result = await fetchJson<Paginated<IntensifyPlayerItem>>(
+          `/api/intensify/players?${params}`,
+        );
+        if (!cancelled) setData(result);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [keyword, page, sort, order]);
 
   function handleSearch() {
     setPage(1);
@@ -158,7 +163,12 @@ export default function IntensifyPlayersPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <>
+          <div
+            className={
+              "flex flex-col gap-4 transition-opacity duration-150 " +
+              (loading ? "pointer-events-none opacity-60" : "")
+            }
+          >
             <Table>
               <TableHeader>
                 <TableRow>
@@ -257,6 +267,20 @@ export default function IntensifyPlayersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* 末页行数不足时补空行，保持表格高度稳定，避免翻页/排序时页面跳动 */}
+                {data.items.length < data.pageSize &&
+                  Array.from(
+                    { length: data.pageSize - data.items.length },
+                    (_, index) => (
+                      <TableRow
+                        key={`fill-${index}`}
+                        aria-hidden
+                        className="pointer-events-none"
+                      >
+                        <TableCell colSpan={7} className="h-14" />
+                      </TableRow>
+                    ),
+                  )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between">
@@ -286,7 +310,7 @@ export default function IntensifyPlayersPage() {
                 </PaginationContent>
               </Pagination>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

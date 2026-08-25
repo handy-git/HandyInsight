@@ -21,7 +21,7 @@ export interface RegistryEntry {
   registeredAt: string | null;
   /** 数据来源插件 id 集合 */
   sources: string[];
-  /** 各插件记录的最后活跃时间（取最大值为整体最近活跃） */
+  /** 最近活跃时间：优先 PlayerTime（最后登录），无记录时退到 AuthMe（lastlogin），不取其他插件 */
   lastActiveAt: string | null;
 }
 
@@ -54,9 +54,9 @@ async function fetchPlayerTime(): Promise<RowDataPacket[]> {
 }
 
 async function fetchPlayerSignIn(): Promise<RowDataPacket[]> {
+  // 签到表只提供来源与名称；签到时间不参与最近活跃计算
   return query<RowDataPacket[]>(
-    `SELECT player_uuid AS uuid, MAX(player_name) AS name,
-            MAX(sign_in_date) AS lastActiveAt
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name
        FROM player_sign_in
       GROUP BY player_uuid`,
   );
@@ -98,10 +98,9 @@ async function fetchPlayerTitle(): Promise<RowDataPacket[]> {
 }
 
 async function fetchPlayerTask(): Promise<RowDataPacket[]> {
-  // 任务币表带登录时间，提供来源/名称/最近活跃
+  // 任务币表只提供来源与名称；登录时间不参与最近活跃计算
   return query<RowDataPacket[]>(
-    `SELECT player_uuid AS uuid, MAX(player_name) AS name,
-            MAX(last_join_time) AS lastActiveAt
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name
        FROM task_coin
       WHERE player_uuid IS NOT NULL
       GROUP BY player_uuid`,
@@ -109,10 +108,9 @@ async function fetchPlayerTask(): Promise<RowDataPacket[]> {
 }
 
 async function fetchPlayerWarp(): Promise<RowDataPacket[]> {
-  // 地标表带创建时间，提供来源/名称/最近活跃
+  // 地标表只提供来源与名称；创建时间不参与最近活跃计算
   return query<RowDataPacket[]>(
-    `SELECT player_uuid AS uuid, MAX(player_name) AS name,
-            MAX(create_time) AS lastActiveAt
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name
        FROM warp_player
       WHERE player_uuid IS NOT NULL
       GROUP BY player_uuid`,
@@ -120,18 +118,12 @@ async function fetchPlayerWarp(): Promise<RowDataPacket[]> {
 }
 
 async function fetchPlayerCurrency(): Promise<RowDataPacket[]> {
-  // 货币表无时间列，最近活跃取流水表的最大变更时间
+  // 货币表只提供来源与名称；流水时间不参与最近活跃计算
   return query<RowDataPacket[]>(
-    `SELECT pc.player_uuid AS uuid, MAX(pc.player_name) AS name,
-            MAX(cl.lastAt) AS lastActiveAt
-       FROM player_currency pc
-       LEFT JOIN (
-         SELECT player_uuid, MAX(operator_time) AS lastAt
-           FROM player_currency_log
-          GROUP BY player_uuid
-       ) cl ON cl.player_uuid = pc.player_uuid
-      WHERE pc.player_uuid IS NOT NULL
-      GROUP BY pc.player_uuid`,
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name
+       FROM player_currency
+      WHERE player_uuid IS NOT NULL
+      GROUP BY player_uuid`,
   );
 }
 
@@ -146,10 +138,9 @@ async function fetchPlayerIntensify(): Promise<RowDataPacket[]> {
 }
 
 async function fetchGuildPlayer(): Promise<RowDataPacket[]> {
-  // 公会成员表带最近上线时间，提供来源/名称/最近活跃
+  // 公会成员表只提供来源与名称；上线时间不参与最近活跃计算
   return query<RowDataPacket[]>(
-    `SELECT player_uuid AS uuid, MAX(player_name) AS name,
-            MAX(last_join_time) AS lastActiveAt
+    `SELECT player_uuid AS uuid, MAX(player_name) AS name
        FROM guild_player
       WHERE player_uuid IS NOT NULL
       GROUP BY player_uuid`,
@@ -229,13 +220,6 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
       const existing = byUuid.get(uuid);
       if (existing) {
         existing.sources.push("playersignin");
-        if (
-          row.lastActiveAt &&
-          (!existing.lastActiveAt ||
-            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
-        ) {
-          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
-        }
       } else {
         byUuid.set(uuid, {
           key: uuid,
@@ -243,9 +227,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playersignin"],
-          lastActiveAt: row.lastActiveAt
-            ? formatDateTime(String(row.lastActiveAt))
-            : null,
+          lastActiveAt: null,
         });
       }
     }
@@ -301,13 +283,6 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
       const existing = byUuid.get(uuid);
       if (existing) {
         existing.sources.push("playertask");
-        if (
-          row.lastActiveAt &&
-          (!existing.lastActiveAt ||
-            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
-        ) {
-          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
-        }
       } else {
         byUuid.set(uuid, {
           key: uuid,
@@ -315,9 +290,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playertask"],
-          lastActiveAt: row.lastActiveAt
-            ? formatDateTime(String(row.lastActiveAt))
-            : null,
+          lastActiveAt: null,
         });
       }
     }
@@ -331,13 +304,6 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
       const existing = byUuid.get(uuid);
       if (existing) {
         existing.sources.push("playerwarp");
-        if (
-          row.lastActiveAt &&
-          (!existing.lastActiveAt ||
-            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
-        ) {
-          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
-        }
       } else {
         byUuid.set(uuid, {
           key: uuid,
@@ -345,9 +311,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playerwarp"],
-          lastActiveAt: row.lastActiveAt
-            ? formatDateTime(String(row.lastActiveAt))
-            : null,
+          lastActiveAt: null,
         });
       }
     }
@@ -361,13 +325,6 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
       const existing = byUuid.get(uuid);
       if (existing) {
         existing.sources.push("playercurrency");
-        if (
-          row.lastActiveAt &&
-          (!existing.lastActiveAt ||
-            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
-        ) {
-          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
-        }
       } else {
         byUuid.set(uuid, {
           key: uuid,
@@ -375,9 +332,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playercurrency"],
-          lastActiveAt: row.lastActiveAt
-            ? formatDateTime(String(row.lastActiveAt))
-            : null,
+          lastActiveAt: null,
         });
       }
     }
@@ -412,13 +367,6 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
       const existing = byUuid.get(uuid);
       if (existing) {
         existing.sources.push("playerguild");
-        if (
-          row.lastActiveAt &&
-          (!existing.lastActiveAt ||
-            formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
-        ) {
-          existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
-        }
       } else {
         byUuid.set(uuid, {
           key: uuid,
@@ -426,9 +374,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playerguild"],
-          lastActiveAt: row.lastActiveAt
-            ? formatDateTime(String(row.lastActiveAt))
-            : null,
+          lastActiveAt: null,
         });
       }
     }
@@ -447,11 +393,8 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
             ? formatDateTime(String(row.registeredAt))
             : null;
           existing.name = realname;
-          if (
-            row.lastActiveAt &&
-            (!existing.lastActiveAt ||
-              formatDateTime(String(row.lastActiveAt)) > existing.lastActiveAt)
-          ) {
+          // 最近活跃：PlayerTime 优先，AuthMe 仅在缺省时兜底
+          if (row.lastActiveAt && !existing.lastActiveAt) {
             existing.lastActiveAt = formatDateTime(String(row.lastActiveAt));
           }
         }

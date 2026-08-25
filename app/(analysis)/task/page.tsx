@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { formatDateTime, fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
-import type { TaskOverview } from "@/lib/plugins/playertask/types";
+import { taskRarityLabel, type TaskOverview } from "@/lib/plugins/playertask/types";
 import { cn } from "@/lib/utils";
 
 function formatCoins(coins: number): string {
@@ -159,7 +159,7 @@ export default function TaskDashboardPage() {
               <div className="flex flex-wrap gap-2">
                 {overview.rarityStats.map((stat) => (
                   <Badge key={stat.rarity} variant="outline" className="gap-1.5 py-1.5">
-                    {stat.rarity}
+                    {taskRarityLabel(stat.rarity)}
                     <span className="text-muted-foreground">{stat.total} 个</span>
                   </Badge>
                 ))}

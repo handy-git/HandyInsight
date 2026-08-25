@@ -33,11 +33,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchJson } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
 import { toggleSort, type SortOrder } from "@/lib/common/sort";
-import type {
-  NpcTaskEntry,
-  TaskLibrary,
-  TaskLibraryEntry,
-  TaskPoolEntry,
+import {
+  taskDemandLabel,
+  taskRarityLabel,
+  taskRewardLabel,
+  taskTypeLabel,
+  type NpcTaskEntry,
+  type TaskLibrary,
+  type TaskLibraryEntry,
+  type TaskPoolEntry,
 } from "@/lib/plugins/playertask/types";
 
 /** 任务库排序字段（一次性加载无分页，客户端数组排序）。 */
@@ -124,10 +128,10 @@ function LibraryTable({
               <McText text={task.taskName} />
             </TableCell>
             <TableCell>
-              {task.type ? <Badge variant="outline">{task.type}</Badge> : "—"}
+              {task.type ? <Badge variant="outline">{taskTypeLabel(task.type)}</Badge> : "—"}
             </TableCell>
             <TableCell>
-              {task.rarity ? <Badge variant="outline">{task.rarity}</Badge> : "—"}
+              {task.rarity ? <Badge variant="outline">{taskRarityLabel(task.rarity)}</Badge> : "—"}
             </TableCell>
             <TableCell className="max-w-56">
               <span className="block truncate" title={task.taskDemand ?? ""}>
@@ -221,10 +225,12 @@ function PoolTable({
   title,
   rows,
   icon,
+  labelOf,
 }: {
   title: string;
   rows: TaskPoolEntry[];
   icon: React.ReactNode;
+  labelOf: (type: string | null) => string;
 }) {
   return (
     <Card>
@@ -255,7 +261,7 @@ function PoolTable({
                 <TableRow key={row.id}>
                   <TableCell>{row.id}</TableCell>
                   <TableCell>
-                    {row.type ? <Badge variant="outline">{row.type}</Badge> : "—"}
+                    {row.type ? <Badge variant="outline">{labelOf(row.type)}</Badge> : "—"}
                   </TableCell>
                   <TableCell className="text-right">{row.amount ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">
@@ -367,7 +373,7 @@ export default function TaskLibraryPage() {
                         <TableCell>{item.id}</TableCell>
                         <TableCell>
                           {item.type ? (
-                            <Badge variant="outline">{item.type}</Badge>
+                            <Badge variant="outline">{taskRewardLabel(item.type)}</Badge>
                           ) : (
                             "—"
                           )}
@@ -389,11 +395,13 @@ export default function TaskLibraryPage() {
                 title="任务目标池"
                 rows={library.demandPool}
                 icon={<ClipboardListIcon className="size-4 text-muted-foreground" />}
+                labelOf={taskDemandLabel}
               />
               <PoolTable
                 title="任务奖励池"
                 rows={library.rewardPool}
                 icon={<GiftIcon className="size-4 text-muted-foreground" />}
+                labelOf={taskRewardLabel}
               />
             </TabsContent>
           </Tabs>

@@ -27,6 +27,82 @@ export const TASK_PLAYER_DEFAULT_ORDER: Record<
 /** 任务分类：每日 / NPC / 卷轴。 */
 export type TaskCategory = "daily" | "npc" | "reel";
 
+/* ---------- 枚举标签映射（插件无字典表，按语言文件约定 + 兜底透传） ---------- */
+
+/** 任务类型（task.type，taskType 枚举）。 */
+export const TASK_TYPE_LABELS: Record<string, string> = {
+  everyday: "每日任务",
+  npc: "NPC任务",
+  reel: "卷轴任务",
+};
+
+/** 稀有度（task.rarity / 卷轴任务稀有度）。 */
+export const TASK_RARITY_LABELS: Record<string, string> = {
+  normal: "普通任务",
+  advanced: "高级任务",
+  rare: "稀有任务",
+  rarer: "罕见任务",
+  epic: "史诗任务",
+  mythical: "神话任务",
+};
+
+/** 任务目标类型（task_demand / 玩家进度明细的 type，demand 枚举）。 */
+export const TASK_DEMAND_LABELS: Record<string, string> = {
+  craftItem: "合成",
+  blockBreak: "挖掘",
+  Fish: "垂钓",
+  Interact: "放置",
+  kill: "击杀",
+  killNormal: "击杀",
+  killPlayer: "击杀",
+  killMp: "击杀",
+  consume: "消耗",
+  submit: "提交",
+  enchantment: "附魔",
+  harvest: "收获",
+  shear: "剪切",
+  custom: "自定义",
+  smith: "锻造",
+  breed: "繁殖",
+  tame: "驯服",
+  chat: "发言",
+  interaction: "交互",
+  command: "命令",
+};
+
+/** 任务奖励类型（task_rewards / 商城的 type，reward 枚举）。 */
+export const TASK_REWARD_LABELS: Record<string, string> = {
+  vault: "金币",
+  playerPoints: "点券",
+  coin: "任务币",
+  itemStack: "物品",
+  command: "命令",
+};
+
+/** 任务类型标签，未知值透传原值。 */
+export function taskTypeLabel(type: string | null): string {
+  if (!type) return "—";
+  return TASK_TYPE_LABELS[type] ?? type;
+}
+
+/** 稀有度标签，未知值透传原值。 */
+export function taskRarityLabel(rarity: string | null): string {
+  if (!rarity) return "—";
+  return TASK_RARITY_LABELS[rarity] ?? rarity;
+}
+
+/** 任务目标类型标签，未知值透传原值。 */
+export function taskDemandLabel(type: string | null): string {
+  if (!type) return "进度";
+  return TASK_DEMAND_LABELS[type] ?? type;
+}
+
+/** 任务奖励类型标签，未知值透传原值。 */
+export function taskRewardLabel(type: string | null): string {
+  if (!type) return "—";
+  return TASK_REWARD_LABELS[type] ?? type;
+}
+
 export interface TaskCoinRankEntry {
   rank: number;
   uuid: string;

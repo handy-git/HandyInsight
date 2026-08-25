@@ -42,7 +42,12 @@ import {
   formatNumber,
 } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
-import type { TaskPlayerDetail, TaskRecord } from "@/lib/plugins/playertask/types";
+import {
+  taskDemandLabel,
+  taskRarityLabel,
+  type TaskPlayerDetail,
+  type TaskRecord,
+} from "@/lib/plugins/playertask/types";
 import { cn } from "@/lib/utils";
 
 function formatCoins(coins: number): string {
@@ -120,7 +125,7 @@ function TaskRecordRow({
             return (
               <div key={index} className="flex items-center gap-2 text-xs">
                 <span className="w-20 shrink-0 truncate text-muted-foreground">
-                  {demand.type ?? "进度"}
+                  {taskDemandLabel(demand.type)}
                 </span>
                 <Progress value={rate} />
                 <span className="shrink-0 tabular-nums">
@@ -335,7 +340,9 @@ export default function TaskPlayerDetailPage({
         description="该玩家的卷轴任务记录，含稀有度"
         records={detail.reel}
         icon={<ScrollTextIcon className="size-4 text-muted-foreground" />}
-        extraOf={(record) => record.rarity}
+        extraOf={(record) =>
+          record.rarity ? taskRarityLabel(record.rarity) : null
+        }
       />
     </>
   );

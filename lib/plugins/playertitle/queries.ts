@@ -2,6 +2,7 @@ import { addDays, format } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
 import { formatDateTime, num } from "@/lib/common/format";
+import type { SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
 import {
   titleListQuerySchema,
@@ -11,9 +12,11 @@ import {
 import type {
   TitleCoinRankEntry,
   TitleListItem,
+  TitleListSortField,
   TitleOverview,
   TitlePlayerDetail,
   TitlePlayerItem,
+  TitlePlayerSortField,
   TitlePlayerTitle,
   TitleRankEntry,
 } from "@/lib/plugins/playertitle/types";
@@ -91,11 +94,21 @@ export async function getTitleCoinRanking(): Promise<TitleCoinRankEntry[]> {
   });
 }
 
-/* ---------- 称号库（分页 + 搜索） ---------- */
+/* ---------- 称号库（分页 + 搜索 + 动态排序） ---------- */
+
+/** ORDER BY 白名单映射：全部是 SELECT 里的别名。 */
+const LIST_SORT_EXPR: Record<TitleListSortField, string> = {
+  name: "titleName",
+  price: "amount",
+  day: "day",
+  position: "position",
+};
 
 export async function getTitleList(
   keyword: string,
   page: number,
+  sort: TitleListSortField = "position",
+  order: SortOrder = "asc",
 ): Promise<Paginated<TitleListItem>> {
   const like = `%${keyword}%`;
   const offset = (page - 1) * PAGE_SIZE;
@@ -112,7 +125,7 @@ export async function getTitleList(
               WHERE tp.title_id = tl.id LIMIT 1) AS particleType
        FROM title_list tl
        ${where}
-      ORDER BY tl.position ASC, tl.id ASC
+      ORDER BY ${LIST_SORT_EXPR[sort]} ${order.toUpperCase()}, tl.id ASC
       LIMIT ? OFFSET ?`,
     [...baseParams, PAGE_SIZE, offset],
   );
@@ -144,11 +157,20 @@ export async function getTitleList(
   };
 }
 
-/* ---------- 称号玩家列表（搜索 + 服务端分页，批量聚合） ---------- */
+/* ---------- 称号玩家列表（搜索 + 服务端分页 + 动态排序，批量聚合） ---------- */
+
+/** ORDER BY 白名单映射：全部是外层 GROUP BY 后 SELECT 里的别名。 */
+const PLAYER_SORT_EXPR: Record<TitlePlayerSortField, string> = {
+  name: "name",
+  count: "titleCount",
+  coins: "coins",
+};
 
 export async function getTitlePlayers(
   keyword: string,
   page: number,
+  sort: TitlePlayerSortField = "count",
+  order: SortOrder = "desc",
 ): Promise<Paginated<TitlePlayerItem>> {
   const like = `%${keyword}%`;
   const offset = (page - 1) * PAGE_SIZE;
@@ -176,7 +198,7 @@ export async function getTitlePlayers(
        ) u
        ${where}
       GROUP BY u.uuid
-      ORDER BY titleCount DESC, coins DESC, name ASC
+      ORDER BY ${PLAYER_SORT_EXPR[sort]} ${order.toUpperCase()}, name ASC
       LIMIT ? OFFSET ?`,
     [...baseParams, PAGE_SIZE, offset],
   );

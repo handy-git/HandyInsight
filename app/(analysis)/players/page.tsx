@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircleIcon, SearchIcon, UsersIcon } from "lucide-react";
 
+import { SortableHead } from "@/components/sortable-head";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -44,31 +45,67 @@ import {
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
 import { fetchJson, formatSeconds } from "@/lib/common/format";
-import type { Paginated, PlayerListItem } from "@/lib/plugins/playertime/types";
+import { toggleSort, type SortOrder } from "@/lib/common/sort";
+import type { Paginated } from "@/lib/common/types";
+import {
+  PLAYERTIME_DEFAULT_ORDER,
+  type PlayerListItem,
+  type PlayerTimeSortField,
+} from "@/lib/plugins/playertime/types";
 
 export default function PlayersPage() {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<PlayerTimeSortField>("total");
+  const [order, setOrder] = useState<SortOrder>("desc");
   const [data, setData] = useState<Paginated<PlayerListItem> | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback((nextKeyword: string, nextPage: number) => {
-    fetchJson<Paginated<PlayerListItem>>(
-      `/api/playertime/players?keyword=${encodeURIComponent(nextKeyword)}&page=${nextPage}`,
-    )
-      .then(setData)
-      .catch((err: Error) => setError(err.message));
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    load(keyword, page);
-  }, [keyword, page, load]);
+    let cancelled = false;
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        keyword,
+        page: String(page),
+        sort,
+        order,
+      });
+      try {
+        const result = await fetchJson<Paginated<PlayerListItem>>(
+          `/api/playertime/players?${params}`,
+        );
+        if (!cancelled) setData(result);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [keyword, page, sort, order]);
 
   function handleSearch() {
     setPage(1);
     setKeyword(input.trim());
+  }
+
+  function handleSort(field: PlayerTimeSortField) {
+    const next = toggleSort(
+      { field: sort, order },
+      field,
+      PLAYERTIME_DEFAULT_ORDER[field],
+    );
+    setSort(next.field);
+    setOrder(next.order);
+    setPage(1);
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
@@ -77,7 +114,7 @@ export default function PlayersPage() {
     <Card>
       <CardHeader>
         <CardTitle>玩家列表</CardTitle>
-        <CardDescription>按玩家名称搜索，点击行进入玩家详情</CardDescription>
+        <CardDescription>按玩家名称搜索，点击表头排序，点击行进入玩家详情</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <InputGroup className="max-w-sm">
@@ -116,16 +153,55 @@ export default function PlayersPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <>
+          <div
+            className={
+              "flex flex-col gap-4 transition-opacity duration-150 " +
+              (loading ? "pointer-events-none opacity-60" : "")
+            }
+          >
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>玩家</TableHead>
+                  <SortableHead<PlayerTimeSortField>
+                    label="玩家"
+                    field="name"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
                   <TableHead>状态</TableHead>
-                  <TableHead className="text-right">今日</TableHead>
-                  <TableHead className="text-right">本周</TableHead>
-                  <TableHead className="text-right">本月</TableHead>
-                  <TableHead className="text-right">总计</TableHead>
+                  <SortableHead<PlayerTimeSortField>
+                    label="今日"
+                    field="today"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<PlayerTimeSortField>
+                    label="本周"
+                    field="week"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<PlayerTimeSortField>
+                    label="本月"
+                    field="month"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<PlayerTimeSortField>
+                    label="总计"
+                    field="total"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -168,6 +244,20 @@ export default function PlayersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* 末页行数不足时补空行，保持表格高度稳定，避免翻页/排序时页面跳动 */}
+                {data.items.length < data.pageSize &&
+                  Array.from(
+                    { length: data.pageSize - data.items.length },
+                    (_, index) => (
+                      <TableRow
+                        key={`fill-${index}`}
+                        aria-hidden
+                        className="pointer-events-none"
+                      >
+                        <TableCell colSpan={6} className="h-14" />
+                      </TableRow>
+                    ),
+                  )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between">
@@ -197,7 +287,7 @@ export default function PlayersPage() {
                 </PaginationContent>
               </Pagination>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

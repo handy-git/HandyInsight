@@ -1,6 +1,7 @@
 import type { RowDataPacket } from "mysql2/promise";
 
 import { num } from "@/lib/common/format";
+import type { SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
 import {
   companionsUuidSchema,
@@ -12,6 +13,7 @@ import type {
   CompanionsPlayerDetail,
   CompanionsPlayerItem,
   CompanionsRankEntry,
+  CompanionsSortField,
 } from "@/lib/plugins/companions/types";
 import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
@@ -80,11 +82,21 @@ export async function getEquipmentRanking(): Promise<
   });
 }
 
-/* ---------- 玩家列表（搜索 + 服务端分页） ---------- */
+/* ---------- 玩家列表（搜索 + 服务端分页 + 动态排序） ---------- */
+
+/** ORDER BY 白名单映射：全部是 GROUP BY 后 SELECT 里的别名。 */
+const SORT_EXPR: Record<CompanionsSortField, string> = {
+  name: "name",
+  count: "companionCount",
+  level: "maxAbilityLevel",
+  coins: "coins",
+};
 
 export async function getCompanionsPlayers(
   keyword: string,
   page: number,
+  sort: CompanionsSortField = "count",
+  order: SortOrder = "desc",
 ): Promise<Paginated<CompanionsPlayerItem>> {
   const like = `%${keyword}%`;
   const offset = (page - 1) * PAGE_SIZE;
@@ -103,7 +115,7 @@ export async function getCompanionsPlayers(
        FROM companions_owned o
        ${where}
       GROUP BY o.player_uuid
-      ORDER BY companionCount DESC, name ASC
+      ORDER BY ${SORT_EXPR[sort]} ${order.toUpperCase()}, name ASC
       LIMIT ? OFFSET ?`,
     [...baseParams, PAGE_SIZE, offset],
   );

@@ -1,6 +1,19 @@
 import type { Paginated } from "@/lib/common/types";
+import type { SortOrder } from "@/lib/common/sort";
 
 export type { Paginated };
+
+/** 玩家列表可排序字段。 */
+export type PlayerTimeSortField = "name" | "today" | "week" | "month" | "total";
+
+/** 各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const PLAYERTIME_DEFAULT_ORDER: Record<PlayerTimeSortField, SortOrder> = {
+  name: "asc",
+  today: "desc",
+  week: "desc",
+  month: "desc",
+  total: "desc",
+};
 
 export interface PlayertimeOverview {
   onlinePlayers: number;

@@ -1,6 +1,7 @@
 import type { RowDataPacket } from "mysql2/promise";
 
 import { formatDateTime, num } from "@/lib/common/format";
+import type { SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
 import {
   currencyLogsQuerySchema,
@@ -10,9 +11,11 @@ import {
 import type {
   CurrencyBalanceEntry,
   CurrencyLogEntry,
+  CurrencyLogSortField,
   CurrencyOverview,
   CurrencyPlayerDetail,
   CurrencyPlayerItem,
+  CurrencyPlayerSortField,
   CurrencyPlayerSummary,
 } from "@/lib/plugins/playercurrency/types";
 import { createCache } from "@/lib/server/cache";
@@ -115,23 +118,35 @@ export async function getCurrencyOverview(): Promise<CurrencyOverview> {
   });
 }
 
-/* ---------- 玩家列表（搜索 + 服务端分页，按 uuid 聚合） ---------- */
+/* ---------- 玩家列表（搜索 + 服务端分页 + 动态排序，按 uuid 聚合） ---------- */
+
+/** ORDER BY 白名单映射：全部是 SELECT 里的别名。 */
+const PLAYER_SORT_EXPR: Record<CurrencyPlayerSortField, string> = {
+  name: "name",
+  types: "typeCount",
+  balance: "totalBalance",
+  lastChange: "lastChangeAt",
+};
 
 export async function getCurrencyPlayers(
   keyword: string,
   page: number,
+  sort: CurrencyPlayerSortField = "balance",
+  order: SortOrder = "desc",
 ): Promise<Paginated<CurrencyPlayerItem>> {
   const like = `%${keyword}%`;
   const offset = (page - 1) * PAGE_SIZE;
   const where = keyword ? "WHERE u.name LIKE ?" : "";
   const baseParams = keyword ? [like] : [];
 
-  const [rows, countRows, activityRows] = await Promise.all([
+  const [rows, countRows] = await Promise.all([
     query<RowDataPacket[]>(
       `SELECT u.uuid,
               MAX(u.name) AS name,
               MAX(u.typeCount) AS typeCount,
-              MAX(u.totalBalance) AS totalBalance
+              MAX(u.totalBalance) AS totalBalance,
+              (SELECT MAX(l.operator_time) FROM player_currency_log l
+                WHERE l.player_uuid = u.uuid) AS lastChangeAt
          FROM (
            SELECT player_uuid AS uuid, MAX(player_name) AS name,
                   COUNT(*) AS typeCount,
@@ -142,7 +157,7 @@ export async function getCurrencyPlayers(
          ) u
          ${where}
         GROUP BY u.uuid
-        ORDER BY totalBalance DESC, name ASC
+        ORDER BY ${PLAYER_SORT_EXPR[sort]} ${order.toUpperCase()}, name ASC
         LIMIT ? OFFSET ?`,
       [...baseParams, PAGE_SIZE, offset],
     ),
@@ -160,20 +175,7 @@ export async function getCurrencyPlayers(
          ) t`,
       baseParams,
     ),
-    query<RowDataPacket[]>(
-      `SELECT player_uuid AS uuid, MAX(operator_time) AS lastChangeAt
-         FROM player_currency_log
-        WHERE player_uuid IS NOT NULL
-        GROUP BY player_uuid`,
-    ),
   ]);
-
-  const lastChangeMap = new Map<string, string>();
-  for (const row of activityRows) {
-    if (row.lastChangeAt) {
-      lastChangeMap.set(String(row.uuid), formatDateTime(String(row.lastChangeAt)));
-    }
-  }
 
   return {
     items: rows.map((row) => ({
@@ -181,7 +183,9 @@ export async function getCurrencyPlayers(
       name: row.name ? String(row.name) : String(row.uuid).slice(0, 8),
       typeCount: num(row.typeCount),
       totalBalance: num(row.totalBalance),
-      lastChangeAt: lastChangeMap.get(String(row.uuid)) ?? null,
+      lastChangeAt: row.lastChangeAt
+        ? formatDateTime(String(row.lastChangeAt))
+        : null,
     })),
     total: num(countRows[0]?.total),
     page,
@@ -236,14 +240,26 @@ export async function getCurrencyPlayerDetail(
   };
 }
 
-/* ---------- 货币流水（搜索 + 类型筛选 + 分页） ---------- */
+/* ---------- 货币流水（搜索 + 类型筛选 + 分页 + 动态排序） ---------- */
+
+/** ORDER BY 白名单映射：changeValue 是 \`change\` 列的反引号别名，其余是 SELECT 别名。 */
+const LOG_SORT_EXPR: Record<CurrencyLogSortField, string> = {
+  name: "playerName",
+  type: "type",
+  oldBalance: "oldBalance",
+  change: "changeValue",
+  balance: "balance",
+  time: "operatorTime",
+};
 
 export async function getCurrencyLogs(input: {
   keyword: string;
   type: string;
   page: number;
+  sort: CurrencyLogSortField;
+  order: SortOrder;
 }): Promise<Paginated<CurrencyLogEntry>> {
-  const { keyword, type, page } = input;
+  const { keyword, type, page, sort = "time", order = "desc" } = input;
   const conditions: string[] = [];
   const params: unknown[] = [];
   if (keyword) {
@@ -264,7 +280,7 @@ export async function getCurrencyLogs(input: {
     query<RowDataPacket[]>(
       `${LOG_SELECT}
         ${where}
-        ORDER BY operator_time DESC, id DESC
+        ORDER BY ${LOG_SORT_EXPR[sort]} ${order.toUpperCase()}, id DESC
         LIMIT ? OFFSET ?`,
       [...params, PAGE_SIZE, offset],
     ),

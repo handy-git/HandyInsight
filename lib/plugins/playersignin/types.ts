@@ -1,3 +1,5 @@
+import type { SortOrder } from "@/lib/common/sort";
+
 export interface SignInOverview {
   /** 今日签到人数 */
   todaySigns: number;
@@ -66,3 +68,15 @@ export interface SignInRecord {
   signInDate: string;
   rank: number;
 }
+
+/** 签到玩家列表可排序字段。 */
+export type SignInSortField = "name" | "total" | "month" | "last" | "cards";
+
+/** 各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const SIGNIN_DEFAULT_ORDER: Record<SignInSortField, SortOrder> = {
+  name: "asc",
+  total: "desc",
+  month: "desc",
+  last: "desc",
+  cards: "desc",
+};

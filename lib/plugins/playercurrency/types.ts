@@ -1,5 +1,47 @@
 /** PlayerCurrency 插件共享类型。 */
 
+import type { SortOrder } from "@/lib/common/sort";
+
+/** 玩家列表可排序字段。 */
+export type CurrencyPlayerSortField =
+  | "name"
+  | "types"
+  | "balance"
+  | "lastChange";
+
+/** 玩家列表各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const CURRENCY_PLAYER_DEFAULT_ORDER: Record<
+  CurrencyPlayerSortField,
+  SortOrder
+> = {
+  name: "asc",
+  types: "desc",
+  balance: "desc",
+  lastChange: "desc",
+};
+
+/** 货币流水可排序字段。 */
+export type CurrencyLogSortField =
+  | "name"
+  | "type"
+  | "oldBalance"
+  | "change"
+  | "balance"
+  | "time";
+
+/** 货币流水各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const CURRENCY_LOG_DEFAULT_ORDER: Record<
+  CurrencyLogSortField,
+  SortOrder
+> = {
+  name: "asc",
+  type: "asc",
+  oldBalance: "desc",
+  change: "desc",
+  balance: "desc",
+  time: "desc",
+};
+
 /** 货币类型统计。 */
 export interface CurrencyTypeStat {
   type: string;

@@ -2,6 +2,7 @@ import { addDays, format, startOfDay, startOfMonth } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
 import { formatDateTime, num } from "@/lib/common/format";
+import type { SortOrder } from "@/lib/common/sort";
 import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 import type { Paginated } from "@/lib/common/types";
@@ -11,6 +12,7 @@ import type {
   SignInPlayerItem,
   SignInRankingEntry,
   SignInRecord,
+  SignInSortField,
   SignInTrendPoint,
   TodaySignIn,
 } from "@/lib/plugins/playersignin/types";
@@ -124,9 +126,20 @@ export async function getSignInRanking(): Promise<SignInRankingEntry[]> {
 
 /* ---------- 签到玩家列表（搜索 + 服务端分页） ---------- */
 
+/** 列表排序字段 → SELECT 别名（白名单，安全拼接方向后缀）。 */
+const SORT_EXPR: Record<SignInSortField, string> = {
+  name: "name",
+  total: "totalSigns",
+  month: "monthSigns",
+  last: "lastSignAt",
+  cards: "cards",
+};
+
 export async function getSignInPlayers(
   keyword: string,
   page: number,
+  sort: SignInSortField = "total",
+  order: SortOrder = "desc",
 ): Promise<Paginated<SignInPlayerItem>> {
   const monthStart = toSqlDateTime(startOfMonth(new Date()));
   const like = `%${keyword}%`;
@@ -149,7 +162,7 @@ export async function getSignInPlayers(
        ) c ON c.player_uuid = s.player_uuid
        ${where}
       GROUP BY s.player_uuid
-      ORDER BY totalSigns DESC, lastSignAt ASC
+      ORDER BY ${SORT_EXPR[sort]} ${order.toUpperCase()}, name ASC
       LIMIT ? OFFSET ?`,
     [monthStart, ...baseParams, PAGE_SIZE, offset],
   );

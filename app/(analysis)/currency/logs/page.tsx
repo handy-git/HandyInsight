@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircleIcon,
@@ -8,6 +8,7 @@ import {
   SearchIcon,
 } from "lucide-react";
 
+import { SortableHead } from "@/components/sortable-head";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,8 +49,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchJson, formatNumber } from "@/lib/common/format";
+import { toggleSort, type SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
-import type { CurrencyLogEntry } from "@/lib/plugins/playercurrency/types";
+import {
+  CURRENCY_LOG_DEFAULT_ORDER,
+  type CurrencyLogEntry,
+  type CurrencyLogSortField,
+} from "@/lib/plugins/playercurrency/types";
 
 interface Filters {
   keyword: string;
@@ -64,23 +70,42 @@ export default function CurrencyLogsPage() {
   const [typeInput, setTypeInput] = useState("");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<CurrencyLogSortField>("time");
+  const [order, setOrder] = useState<SortOrder>("desc");
   const [data, setData] = useState<Paginated<CurrencyLogEntry> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const load = useCallback((nextFilters: Filters, nextPage: number) => {
-    const params = new URLSearchParams({ page: String(nextPage) });
-    if (nextFilters.keyword) params.set("keyword", nextFilters.keyword);
-    if (nextFilters.type) params.set("type", nextFilters.type);
-    fetchJson<Paginated<CurrencyLogEntry>>(
-      `/api/currency/logs?${params.toString()}`,
-    )
-      .then(setData)
-      .catch((err: Error) => setError(err.message));
-  }, []);
-
+  // 筛选/翻页/排序任一条件变化即重新请求。
+  // cleanup 的 cancelled 标志丢弃过期响应（快速切换时旧请求结果不覆盖新数据）。
   useEffect(() => {
-    load(filters, page);
-  }, [filters, page, load]);
+    let cancelled = false;
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        page: String(page),
+        sort,
+        order,
+      });
+      if (filters.keyword) params.set("keyword", filters.keyword);
+      if (filters.type) params.set("type", filters.type);
+      try {
+        const result = await fetchJson<Paginated<CurrencyLogEntry>>(
+          `/api/currency/logs?${params.toString()}`,
+        );
+        if (!cancelled) setData(result);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [filters, page, sort, order]);
 
   function handleSearch() {
     setPage(1);
@@ -91,7 +116,20 @@ export default function CurrencyLogsPage() {
     setInput("");
     setTypeInput("");
     setPage(1);
+    setSort("time");
+    setOrder("desc");
     setFilters(EMPTY_FILTERS);
+  }
+
+  function handleSort(field: CurrencyLogSortField) {
+    const next = toggleSort(
+      { field: sort, order },
+      field,
+      CURRENCY_LOG_DEFAULT_ORDER[field],
+    );
+    setSort(next.field);
+    setOrder(next.order);
+    setPage(1);
   }
 
   const hasFilter = Boolean(filters.keyword || filters.type);
@@ -104,7 +142,7 @@ export default function CurrencyLogsPage() {
       <CardHeader>
         <CardTitle>货币流水</CardTitle>
         <CardDescription>
-          全部货币变更记录，支持按玩家、变更人、原因、类型筛选
+          全部货币变更记录，支持按玩家、变更人、原因、类型筛选，点击表头排序
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -165,18 +203,62 @@ export default function CurrencyLogsPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <>
+          <div
+            className={
+              "flex flex-col gap-4 transition-opacity duration-150 " +
+              (loading ? "pointer-events-none opacity-60" : "")
+            }
+          >
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>玩家</TableHead>
-                  <TableHead>类型</TableHead>
-                  <TableHead className="text-right">变更前</TableHead>
-                  <TableHead className="text-right">变更值</TableHead>
-                  <TableHead className="text-right">变更后</TableHead>
+                  <SortableHead<CurrencyLogSortField>
+                    label="玩家"
+                    field="name"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
+                  <SortableHead<CurrencyLogSortField>
+                    label="类型"
+                    field="type"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
+                  <SortableHead<CurrencyLogSortField>
+                    label="变更前"
+                    field="oldBalance"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<CurrencyLogSortField>
+                    label="变更值"
+                    field="change"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<CurrencyLogSortField>
+                    label="变更后"
+                    field="balance"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
                   <TableHead>原因</TableHead>
                   <TableHead>变更人</TableHead>
-                  <TableHead>时间</TableHead>
+                  <SortableHead<CurrencyLogSortField>
+                    label="时间"
+                    field="time"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -227,6 +309,20 @@ export default function CurrencyLogsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* 末页行数不足时补空行，保持表格高度稳定，避免翻页/排序时页面跳动 */}
+                {data.items.length < data.pageSize &&
+                  Array.from(
+                    { length: data.pageSize - data.items.length },
+                    (_, index) => (
+                      <TableRow
+                        key={`fill-${index}`}
+                        aria-hidden
+                        className="pointer-events-none"
+                      >
+                        <TableCell colSpan={8} className="h-14" />
+                      </TableRow>
+                    ),
+                  )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between">
@@ -261,7 +357,7 @@ export default function CurrencyLogsPage() {
                 </PaginationContent>
               </Pagination>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

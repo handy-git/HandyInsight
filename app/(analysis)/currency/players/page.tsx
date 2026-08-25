@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircleIcon,
@@ -8,6 +8,7 @@ import {
   SearchIcon,
 } from "lucide-react";
 
+import { SortableHead } from "@/components/sortable-head";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -42,38 +43,74 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { playerAvatarUrl } from "@/lib/common/avatar";
 import { fetchJson, formatNumber } from "@/lib/common/format";
+import { toggleSort, type SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
-import type { CurrencyPlayerItem } from "@/lib/plugins/playercurrency/types";
+import {
+  CURRENCY_PLAYER_DEFAULT_ORDER,
+  type CurrencyPlayerItem,
+  type CurrencyPlayerSortField,
+} from "@/lib/plugins/playercurrency/types";
 
 export default function CurrencyPlayersPage() {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<CurrencyPlayerSortField>("balance");
+  const [order, setOrder] = useState<SortOrder>("desc");
   const [data, setData] = useState<Paginated<CurrencyPlayerItem> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const load = useCallback((nextKeyword: string, nextPage: number) => {
-    fetchJson<Paginated<CurrencyPlayerItem>>(
-      `/api/currency/players?keyword=${encodeURIComponent(nextKeyword)}&page=${nextPage}`,
-    )
-      .then(setData)
-      .catch((err: Error) => setError(err.message));
-  }, []);
-
+  // 搜索/翻页/排序任一条件变化即重新请求。
+  // cleanup 的 cancelled 标志丢弃过期响应（快速切换时旧请求结果不覆盖新数据）。
   useEffect(() => {
-    load(keyword, page);
-  }, [keyword, page, load]);
+    let cancelled = false;
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        keyword,
+        page: String(page),
+        sort,
+        order,
+      });
+      try {
+        const result = await fetchJson<Paginated<CurrencyPlayerItem>>(
+          `/api/currency/players?${params}`,
+        );
+        if (!cancelled) setData(result);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [keyword, page, sort, order]);
 
   function handleSearch() {
     setPage(1);
     setKeyword(input.trim());
+  }
+
+  function handleSort(field: CurrencyPlayerSortField) {
+    const next = toggleSort(
+      { field: sort, order },
+      field,
+      CURRENCY_PLAYER_DEFAULT_ORDER[field],
+    );
+    setSort(next.field);
+    setOrder(next.order);
+    setPage(1);
   }
 
   const totalPages = data
@@ -85,7 +122,7 @@ export default function CurrencyPlayersPage() {
       <CardHeader>
         <CardTitle>货币玩家</CardTitle>
         <CardDescription>
-          按玩家名称搜索，点击行查看货币详情
+          按玩家名称搜索，点击表头排序，点击行查看货币详情
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -127,14 +164,45 @@ export default function CurrencyPlayersPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <>
+          <div
+            className={
+              "flex flex-col gap-4 transition-opacity duration-150 " +
+              (loading ? "pointer-events-none opacity-60" : "")
+            }
+          >
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>玩家</TableHead>
-                  <TableHead className="text-right">货币类型</TableHead>
-                  <TableHead className="text-right">总余额</TableHead>
-                  <TableHead>最近变动</TableHead>
+                  <SortableHead<CurrencyPlayerSortField>
+                    label="玩家"
+                    field="name"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
+                  <SortableHead<CurrencyPlayerSortField>
+                    label="货币类型"
+                    field="types"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<CurrencyPlayerSortField>
+                    label="总余额"
+                    field="balance"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<CurrencyPlayerSortField>
+                    label="最近变动"
+                    field="lastChange"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -173,6 +241,20 @@ export default function CurrencyPlayersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* 末页行数不足时补空行，保持表格高度稳定，避免翻页/排序时页面跳动 */}
+                {data.items.length < data.pageSize &&
+                  Array.from(
+                    { length: data.pageSize - data.items.length },
+                    (_, index) => (
+                      <TableRow
+                        key={`fill-${index}`}
+                        aria-hidden
+                        className="pointer-events-none"
+                      >
+                        <TableCell colSpan={4} className="h-14" />
+                      </TableRow>
+                    ),
+                  )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between">
@@ -207,7 +289,7 @@ export default function CurrencyPlayersPage() {
                 </PaginationContent>
               </Pagination>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

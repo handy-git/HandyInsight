@@ -10,6 +10,8 @@ export const rankingQuerySchema = z.object({
 export const playersQuerySchema = z.object({
   keyword: z.string().trim().max(64).default(""),
   page: z.coerce.number().int().min(1).default(1),
+  sort: z.enum(["name", "today", "week", "month", "total"]).default("total"),
+  order: z.enum(["asc", "desc"]).default("desc"),
 });
 
 export const pageQuerySchema = z.object({

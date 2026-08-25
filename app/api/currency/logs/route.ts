@@ -8,9 +8,10 @@ import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   return withPlugin("playercurrency", async () => {
-    const { keyword, type, page } = currencyLogsQuerySchema.parse(
-      searchParamsObject(request),
+    const { keyword, type, page, sort, order } =
+      currencyLogsQuerySchema.parse(searchParamsObject(request));
+    return NextResponse.json(
+      await getCurrencyLogs({ keyword, type, page, sort, order }),
     );
-    return NextResponse.json(await getCurrencyLogs({ keyword, type, page }));
   });
 }

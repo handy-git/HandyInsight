@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircleIcon, MapPinIcon, SearchIcon } from "lucide-react";
 
+import { SortableHead } from "@/components/sortable-head";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,8 +46,13 @@ import {
 } from "@/components/ui/table";
 import { fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
+import { toggleSort, type SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
-import type { WarpListEntry } from "@/lib/plugins/playerwarp/types";
+import {
+  WARP_LIST_DEFAULT_ORDER,
+  type WarpListEntry,
+  type WarpListSortField,
+} from "@/lib/plugins/playerwarp/types";
 
 interface Filters {
   keyword: string;
@@ -63,22 +69,43 @@ export default function WarpListPage() {
   const [serverInput, setServerInput] = useState("");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<WarpListSortField>("createTime");
+  const [order, setOrder] = useState<SortOrder>("desc");
   const [data, setData] = useState<Paginated<WarpListEntry> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const load = useCallback((nextFilters: Filters, nextPage: number) => {
-    const params = new URLSearchParams({ page: String(nextPage) });
-    if (nextFilters.keyword) params.set("keyword", nextFilters.keyword);
-    if (nextFilters.type) params.set("type", nextFilters.type);
-    if (nextFilters.server) params.set("server", nextFilters.server);
-    fetchJson<Paginated<WarpListEntry>>(`/api/warp/list?${params.toString()}`)
-      .then(setData)
-      .catch((err: Error) => setError(err.message));
-  }, []);
-
+  // 筛选/翻页/排序任一条件变化即重新请求。
+  // cleanup 的 cancelled 标志丢弃过期响应（快速切换时旧请求结果不覆盖新数据）。
   useEffect(() => {
-    load(filters, page);
-  }, [filters, page, load]);
+    let cancelled = false;
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        page: String(page),
+        sort,
+        order,
+      });
+      if (filters.keyword) params.set("keyword", filters.keyword);
+      if (filters.type) params.set("type", filters.type);
+      if (filters.server) params.set("server", filters.server);
+      try {
+        const result = await fetchJson<Paginated<WarpListEntry>>(
+          `/api/warp/list?${params.toString()}`,
+        );
+        if (!cancelled) setData(result);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [filters, page, sort, order]);
 
   function handleSearch() {
     setPage(1);
@@ -95,18 +122,32 @@ export default function WarpListPage() {
     setServerInput("");
     setPage(1);
     setFilters(EMPTY_FILTERS);
+    // 排序一并恢复默认（创建时间倒序，保留置顶优先）
+    setSort("createTime");
+    setOrder("desc");
+  }
+
+  function handleSort(field: WarpListSortField) {
+    const next = toggleSort(
+      { field: sort, order },
+      field,
+      WARP_LIST_DEFAULT_ORDER[field],
+    );
+    setSort(next.field);
+    setOrder(next.order);
+    setPage(1);
   }
 
   const hasFilter = Boolean(filters.keyword || filters.type || filters.server);
-  const totalPages = data
-    ? Math.max(1, Math.ceil(data.total / data.pageSize))
-    : 1;
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>地标库</CardTitle>
-        <CardDescription>全部地标，支持按名称、类型、服务器筛选</CardDescription>
+        <CardDescription>
+          全部地标，支持按名称、类型、服务器筛选，点击表头排序
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -175,19 +216,69 @@ export default function WarpListPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <>
+          <div
+            className={
+              "flex flex-col gap-4 transition-opacity duration-150 " +
+              (loading ? "pointer-events-none opacity-60" : "")
+            }
+          >
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>地标</TableHead>
+                  <SortableHead<WarpListSortField>
+                    label="地标"
+                    field="name"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
                   <TableHead>类型</TableHead>
-                  <TableHead>所有者</TableHead>
+                  <SortableHead<WarpListSortField>
+                    label="所有者"
+                    field="owner"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
                   <TableHead>服务器</TableHead>
-                  <TableHead className="text-right">价格</TableHead>
-                  <TableHead className="text-right">热力</TableHead>
-                  <TableHead className="text-right">流量</TableHead>
-                  <TableHead>创建时间</TableHead>
-                  <TableHead>到期时间</TableHead>
+                  <SortableHead<WarpListSortField>
+                    label="价格"
+                    field="price"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<WarpListSortField>
+                    label="热力"
+                    field="thermal"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<WarpListSortField>
+                    label="流量"
+                    field="tp"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortableHead<WarpListSortField>
+                    label="创建时间"
+                    field="createTime"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
+                  <SortableHead<WarpListSortField>
+                    label="到期时间"
+                    field="expirationTime"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -240,6 +331,20 @@ export default function WarpListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* 末页行数不足时补空行，保持表格高度稳定，避免翻页/排序时页面跳动 */}
+                {data.items.length < data.pageSize &&
+                  Array.from(
+                    { length: data.pageSize - data.items.length },
+                    (_, index) => (
+                      <TableRow
+                        key={`fill-${index}`}
+                        aria-hidden
+                        className="pointer-events-none"
+                      >
+                        <TableCell colSpan={9} className="h-14" />
+                      </TableRow>
+                    ),
+                  )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between">
@@ -251,9 +356,7 @@ export default function WarpListPage() {
                   <PaginationItem>
                     <PaginationPrevious
                       aria-disabled={page <= 1}
-                      className={
-                        page <= 1 ? "pointer-events-none opacity-50" : ""
-                      }
+                      className={page <= 1 ? "pointer-events-none opacity-50" : ""}
                       onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                     />
                   </PaginationItem>
@@ -261,9 +364,7 @@ export default function WarpListPage() {
                     <PaginationNext
                       aria-disabled={page >= totalPages}
                       className={
-                        page >= totalPages
-                          ? "pointer-events-none opacity-50"
-                          : ""
+                        page >= totalPages ? "pointer-events-none opacity-50" : ""
                       }
                       onClick={() =>
                         setPage((prev) => Math.min(totalPages, prev + 1))
@@ -273,7 +374,7 @@ export default function WarpListPage() {
                 </PaginationContent>
               </Pagination>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

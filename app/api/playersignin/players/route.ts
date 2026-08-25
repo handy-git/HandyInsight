@@ -6,9 +6,11 @@ import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   return withPlugin("playersignin", async () => {
-    const { keyword, page } = signInPlayersQuerySchema.parse(
+    const { keyword, page, sort, order } = signInPlayersQuerySchema.parse(
       searchParamsObject(request),
     );
-    return NextResponse.json(await getSignInPlayers(keyword, page));
+    return NextResponse.json(
+      await getSignInPlayers(keyword, page, sort, order),
+    );
   });
 }

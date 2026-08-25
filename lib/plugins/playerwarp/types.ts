@@ -1,5 +1,50 @@
 /** PlayerWarp 插件共享类型。 */
 
+import type { SortOrder } from "@/lib/common/sort";
+
+/** 玩家列表可排序字段。 */
+export type WarpPlayerSortField =
+  | "name"
+  | "count"
+  | "displayed"
+  | "tp"
+  | "thermal"
+  | "lastCreate";
+
+/** 玩家列表各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const WARP_PLAYER_DEFAULT_ORDER: Record<
+  WarpPlayerSortField,
+  SortOrder
+> = {
+  name: "asc",
+  count: "desc",
+  displayed: "desc",
+  tp: "desc",
+  thermal: "desc",
+  lastCreate: "desc",
+};
+
+/** 地标库可排序字段。 */
+export type WarpListSortField =
+  | "name"
+  | "owner"
+  | "price"
+  | "thermal"
+  | "tp"
+  | "createTime"
+  | "expirationTime";
+
+/** 地标库各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const WARP_LIST_DEFAULT_ORDER: Record<WarpListSortField, SortOrder> = {
+  name: "asc",
+  owner: "asc",
+  price: "desc",
+  thermal: "desc",
+  tp: "desc",
+  createTime: "desc",
+  expirationTime: "desc",
+};
+
 /** 排行榜条目（热力 / 流量通用）。 */
 export interface WarpRankEntry {
   rank: number;

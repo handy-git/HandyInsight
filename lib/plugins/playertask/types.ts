@@ -1,5 +1,29 @@
 /** PlayerTask 插件共享类型。 */
 
+import type { SortOrder } from "@/lib/common/sort";
+
+/** 玩家列表可排序字段。 */
+export type TaskPlayerSortField =
+  | "name"
+  | "coins"
+  | "daily"
+  | "npc"
+  | "reel"
+  | "lastTask";
+
+/** 玩家列表各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const TASK_PLAYER_DEFAULT_ORDER: Record<
+  TaskPlayerSortField,
+  SortOrder
+> = {
+  name: "asc",
+  coins: "desc",
+  daily: "desc",
+  npc: "desc",
+  reel: "desc",
+  lastTask: "desc",
+};
+
 /** 任务分类：每日 / NPC / 卷轴。 */
 export type TaskCategory = "daily" | "npc" | "reel";
 

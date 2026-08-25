@@ -8,9 +8,9 @@ import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   return withPlugin("playertask", async () => {
-    const { keyword, page } = taskPlayersQuerySchema.parse(
+    const { keyword, page, sort, order } = taskPlayersQuerySchema.parse(
       searchParamsObject(request),
     );
-    return NextResponse.json(await getTaskPlayers(keyword, page));
+    return NextResponse.json(await getTaskPlayers(keyword, page, sort, order));
   });
 }

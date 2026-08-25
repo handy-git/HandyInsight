@@ -1,6 +1,7 @@
 import type { RowDataPacket } from "mysql2/promise";
 
 import { formatDateTime, num } from "@/lib/common/format";
+import type { SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
 import {
   taskPlayersQuerySchema,
@@ -15,6 +16,7 @@ import type {
   TaskOverview,
   TaskPlayerDetail,
   TaskPlayerItem,
+  TaskPlayerSortField,
   TaskPlayerSummary,
   TaskPoolEntry,
   TaskRecord,
@@ -178,11 +180,23 @@ export async function getTaskOverview(): Promise<TaskOverview> {
   });
 }
 
-/* ---------- 玩家列表（搜索 + 服务端分页，按 uuid 批量聚合） ---------- */
+/* ---------- 玩家列表（搜索 + 服务端分页 + 动态排序，按 uuid 批量聚合） ---------- */
+
+/** ORDER BY 白名单映射：全部是外层 GROUP BY 后 SELECT 里的别名。 */
+const PLAYER_SORT_EXPR: Record<TaskPlayerSortField, string> = {
+  name: "name",
+  coins: "coins",
+  daily: "dailyCompleted",
+  npc: "npcCompleted",
+  reel: "reelCompleted",
+  lastTask: "lastTaskAt",
+};
 
 export async function getTaskPlayers(
   keyword: string,
   page: number,
+  sort: TaskPlayerSortField = "lastTask",
+  order: SortOrder = "desc",
 ): Promise<Paginated<TaskPlayerItem>> {
   const like = `%${keyword}%`;
   const offset = (page - 1) * PAGE_SIZE;
@@ -226,7 +240,7 @@ export async function getTaskPlayers(
        ) u
        ${where}
       GROUP BY u.uuid
-      ORDER BY lastTaskAt DESC, coins DESC, name ASC
+      ORDER BY ${PLAYER_SORT_EXPR[sort]} ${order.toUpperCase()}, name ASC
       LIMIT ? OFFSET ?`,
     [...baseParams, PAGE_SIZE, offset],
   );

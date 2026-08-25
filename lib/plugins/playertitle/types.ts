@@ -1,3 +1,29 @@
+import type { SortOrder } from "@/lib/common/sort";
+
+/** 称号库可排序字段。 */
+export type TitleListSortField = "name" | "price" | "day" | "position";
+
+/** 称号库各排序字段首次点击时的默认方向（文本类升序，数值类降序，position 按显示顺序升序）。 */
+export const TITLE_LIST_DEFAULT_ORDER: Record<TitleListSortField, SortOrder> = {
+  name: "asc",
+  price: "desc",
+  day: "desc",
+  position: "asc",
+};
+
+/** 称号玩家列表可排序字段。 */
+export type TitlePlayerSortField = "name" | "count" | "coins";
+
+/** 称号玩家列表各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const TITLE_PLAYER_DEFAULT_ORDER: Record<
+  TitlePlayerSortField,
+  SortOrder
+> = {
+  name: "asc",
+  count: "desc",
+  coins: "desc",
+};
+
 export interface TitleOverview {
   /** 称号总数（不含隐藏） */
   totalTitles: number;

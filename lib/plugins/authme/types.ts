@@ -1,3 +1,15 @@
+import type { SortOrder } from "@/lib/common/sort";
+
+/** 账户列表可排序字段。 */
+export type AuthmeSortField = "name" | "regDate" | "lastLoginAt";
+
+/** 各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const AUTHME_DEFAULT_ORDER: Record<AuthmeSortField, SortOrder> = {
+  name: "asc",
+  regDate: "desc",
+  lastLoginAt: "desc",
+};
+
 export interface AuthmeOverview {
   /** 注册玩家总数 */
   totalPlayers: number;

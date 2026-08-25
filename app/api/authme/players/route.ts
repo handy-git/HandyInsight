@@ -6,9 +6,9 @@ import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   return withPlugin("authme", async () => {
-    const { keyword, page } = authmePlayersQuerySchema.parse(
+    const { keyword, page, sort, order } = authmePlayersQuerySchema.parse(
       searchParamsObject(request),
     );
-    return NextResponse.json(await getAuthmeAccounts(keyword, page));
+    return NextResponse.json(await getAuthmeAccounts(keyword, page, sort, order));
   });
 }

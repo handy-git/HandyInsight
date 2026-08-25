@@ -1,3 +1,16 @@
+import type { SortOrder } from "@/lib/common/sort";
+
+/** 玩家列表可排序字段。 */
+export type CompanionsSortField = "name" | "count" | "level" | "coins";
+
+/** 各排序字段首次点击时的默认方向（文本类升序，数值类降序）。 */
+export const COMPANIONS_DEFAULT_ORDER: Record<CompanionsSortField, SortOrder> = {
+  name: "asc",
+  count: "desc",
+  level: "desc",
+  coins: "desc",
+};
+
 export interface CompanionsOverview {
   /** 拥有宠物的玩家数 */
   totalPlayers: number;

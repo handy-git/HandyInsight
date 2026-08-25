@@ -1,6 +1,7 @@
 import type { RowDataPacket } from "mysql2/promise";
 
 import { formatDateTime, num } from "@/lib/common/format";
+import type { SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
 import {
   warpIdSchema,
@@ -14,9 +15,11 @@ import type {
   WarpDetail,
   WarpEntry,
   WarpListEntry,
+  WarpListSortField,
   WarpOverview,
   WarpPlayerDetail,
   WarpPlayerItem,
+  WarpPlayerSortField,
   WarpPlayerSummary,
   WarpTpRecord,
   WarpWhitelistEntry,
@@ -199,11 +202,23 @@ export async function getWarpOverview(): Promise<WarpOverview> {
   });
 }
 
-/* ---------- 玩家列表（搜索 + 服务端分页，按 uuid 聚合） ---------- */
+/* ---------- 玩家列表（搜索 + 服务端分页 + 动态排序，按 uuid 聚合） ---------- */
+
+/** ORDER BY 白名单映射：全部是外层 GROUP BY 后 SELECT 里的别名。 */
+const PLAYER_SORT_EXPR: Record<WarpPlayerSortField, string> = {
+  name: "name",
+  count: "warpCount",
+  displayed: "displayedCount",
+  tp: "totalTp",
+  thermal: "totalThermal",
+  lastCreate: "lastCreateAt",
+};
 
 export async function getWarpPlayers(
   keyword: string,
   page: number,
+  sort: WarpPlayerSortField = "lastCreate",
+  order: SortOrder = "desc",
 ): Promise<Paginated<WarpPlayerItem>> {
   const like = `%${keyword}%`;
   const offset = (page - 1) * PAGE_SIZE;
@@ -231,7 +246,7 @@ export async function getWarpPlayers(
        ) u
        ${where}
       GROUP BY u.uuid
-      ORDER BY lastCreateAt DESC, totalTp DESC, name ASC
+      ORDER BY ${PLAYER_SORT_EXPR[sort]} ${order.toUpperCase()}, name ASC
       LIMIT ? OFFSET ?`,
     [...baseParams, PAGE_SIZE, offset],
   );
@@ -349,15 +364,28 @@ export async function getWarpPlayerDetail(
   };
 }
 
-/* ---------- 地标库（搜索 + 类型/服务器筛选 + 分页） ---------- */
+/* ---------- 地标库（搜索 + 类型/服务器筛选 + 分页 + 动态排序） ---------- */
+
+/** ORDER BY 白名单映射：全部是 WARP_ENTRY_SELECT 里的别名。 */
+const LIST_SORT_EXPR: Record<WarpListSortField, string> = {
+  name: "name",
+  owner: "ownerName",
+  price: "price",
+  thermal: "thermalValue",
+  tp: "tpNumber",
+  createTime: "createTime",
+  expirationTime: "expirationTime",
+};
 
 export async function getWarpList(input: {
   keyword: string;
   type: string;
   server: string;
   page: number;
+  sort: WarpListSortField;
+  order: SortOrder;
 }): Promise<Paginated<WarpListEntry>> {
-  const { keyword, type, server, page } = input;
+  const { keyword, type, server, page, sort = "createTime", order = "desc" } = input;
   const conditions: string[] = [];
   const params: unknown[] = [];
   if (keyword) {
@@ -375,12 +403,16 @@ export async function getWarpList(input: {
   }
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
   const offset = (page - 1) * PAGE_SIZE;
+  // 默认（创建时间倒序）保留「置顶优先」展示逻辑；用户显式排序时以所选字段为准
+  const orderBy =
+    sort === "createTime" && order === "desc"
+      ? "CASE WHEN top_time > NOW() THEN 1 ELSE 0 END DESC, create_time DESC, id DESC"
+      : `${LIST_SORT_EXPR[sort]} ${order.toUpperCase()}, id DESC`;
 
   const rows = await query<RowDataPacket[]>(
     `${WARP_ENTRY_SELECT}
       ${where}
-      ORDER BY CASE WHEN top_time > NOW() THEN 1 ELSE 0 END DESC,
-               create_time DESC, id DESC
+      ORDER BY ${orderBy}
       LIMIT ? OFFSET ?`,
     [...params, PAGE_SIZE, offset],
   );

@@ -6,9 +6,9 @@ import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   return withPlugin("playertitle", async () => {
-    const { keyword, page } = titlePlayersQuerySchema.parse(
+    const { keyword, page, sort, order } = titlePlayersQuerySchema.parse(
       searchParamsObject(request),
     );
-    return NextResponse.json(await getTitlePlayers(keyword, page));
+    return NextResponse.json(await getTitlePlayers(keyword, page, sort, order));
   });
 }

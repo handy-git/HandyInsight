@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircleIcon, MedalIcon, SearchIcon } from "lucide-react";
 
+import { SortableHead } from "@/components/sortable-head";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,8 +43,13 @@ import {
 } from "@/components/ui/table";
 import { fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
+import { toggleSort, type SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
-import type { TitleListItem } from "@/lib/plugins/playertitle/types";
+import {
+  TITLE_LIST_DEFAULT_ORDER,
+  type TitleListItem,
+  type TitleListSortField,
+} from "@/lib/plugins/playertitle/types";
 
 function formatPrice(item: TitleListItem): string {
   if (!item.buyType) return "—";
@@ -59,35 +65,67 @@ export default function TitleListPage() {
   const [input, setInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<TitleListSortField>("position");
+  const [order, setOrder] = useState<SortOrder>("asc");
   const [data, setData] = useState<Paginated<TitleListItem> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const load = useCallback((nextKeyword: string, nextPage: number) => {
-    fetchJson<Paginated<TitleListItem>>(
-      `/api/playertitle/list?keyword=${encodeURIComponent(nextKeyword)}&page=${nextPage}`,
-    )
-      .then(setData)
-      .catch((err: Error) => setError(err.message));
-  }, []);
-
+  // 搜索/翻页/排序任一条件变化即重新请求。
+  // cleanup 的 cancelled 标志丢弃过期响应（快速切换时旧请求结果不覆盖新数据）。
   useEffect(() => {
-    load(keyword, page);
-  }, [keyword, page, load]);
+    let cancelled = false;
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        keyword,
+        page: String(page),
+        sort,
+        order,
+      });
+      try {
+        const result = await fetchJson<Paginated<TitleListItem>>(
+          `/api/playertitle/list?${params}`,
+        );
+        if (!cancelled) setData(result);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [keyword, page, sort, order]);
 
   function handleSearch() {
     setPage(1);
     setKeyword(input.trim());
   }
 
-  const totalPages = data
-    ? Math.max(1, Math.ceil(data.total / data.pageSize))
-    : 1;
+  function handleSort(field: TitleListSortField) {
+    const next = toggleSort(
+      { field: sort, order },
+      field,
+      TITLE_LIST_DEFAULT_ORDER[field],
+    );
+    setSort(next.field);
+    setOrder(next.order);
+    setPage(1);
+  }
+
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>称号库</CardTitle>
-        <CardDescription>全部称号及其配置（价格、时长、粒子、属性）</CardDescription>
+        <CardDescription>
+          全部称号及其配置（价格、时长、粒子、属性），点击表头排序
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <InputGroup className="max-w-sm">
@@ -128,14 +166,37 @@ export default function TitleListPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <>
+          <div
+            className={
+              "flex flex-col gap-4 transition-opacity duration-150 " +
+              (loading ? "pointer-events-none opacity-60" : "")
+            }
+          >
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>称号</TableHead>
+                  <SortableHead<TitleListSortField>
+                    label="称号"
+                    field="name"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
                   <TableHead>描述</TableHead>
-                  <TableHead>价格</TableHead>
-                  <TableHead>时长</TableHead>
+                  <SortableHead<TitleListSortField>
+                    label="价格"
+                    field="price"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
+                  <SortableHead<TitleListSortField>
+                    label="时长"
+                    field="day"
+                    sort={sort}
+                    order={order}
+                    onSort={handleSort}
+                  />
                   <TableHead>粒子</TableHead>
                   <TableHead>属性</TableHead>
                   <TableHead className="text-right">状态</TableHead>
@@ -179,6 +240,20 @@ export default function TitleListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* 末页行数不足时补空行，保持表格高度稳定，避免翻页/排序时页面跳动 */}
+                {data.items.length < data.pageSize &&
+                  Array.from(
+                    { length: data.pageSize - data.items.length },
+                    (_, index) => (
+                      <TableRow
+                        key={`fill-${index}`}
+                        aria-hidden
+                        className="pointer-events-none"
+                      >
+                        <TableCell colSpan={7} className="h-14" />
+                      </TableRow>
+                    ),
+                  )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between">
@@ -190,9 +265,7 @@ export default function TitleListPage() {
                   <PaginationItem>
                     <PaginationPrevious
                       aria-disabled={page <= 1}
-                      className={
-                        page <= 1 ? "pointer-events-none opacity-50" : ""
-                      }
+                      className={page <= 1 ? "pointer-events-none opacity-50" : ""}
                       onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                     />
                   </PaginationItem>
@@ -200,9 +273,7 @@ export default function TitleListPage() {
                     <PaginationNext
                       aria-disabled={page >= totalPages}
                       className={
-                        page >= totalPages
-                          ? "pointer-events-none opacity-50"
-                          : ""
+                        page >= totalPages ? "pointer-events-none opacity-50" : ""
                       }
                       onClick={() =>
                         setPage((prev) => Math.min(totalPages, prev + 1))
@@ -212,7 +283,7 @@ export default function TitleListPage() {
                 </PaginationContent>
               </Pagination>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -2,6 +2,7 @@ import { addDays, format, startOfDay, startOfWeek } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
 import { formatDateTime, num } from "@/lib/common/format";
+import type { SortOrder } from "@/lib/common/sort";
 import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 import type {
@@ -9,6 +10,7 @@ import type {
   Paginated,
   PlayerDetail,
   PlayerListItem,
+  PlayerTimeSortField,
   PlayertimeOverview,
   RankingEntry,
   RankingScope,
@@ -253,9 +255,21 @@ export async function getRanking(
 
 /* ---------- 玩家列表 ---------- */
 
+/** 列表排序字段 → SQL ORDER BY 表达式（白名单，安全拼接方向后缀）。 */
+const SORT_EXPR: Record<PlayerTimeSortField, string> = {
+  name: "pt.player_name",
+  // today/week/month 是 SELECT 里的 CASE 表达式，ORDER BY 引用别名即可
+  today: "todaySeconds",
+  week: "weekSeconds",
+  month: "monthSeconds",
+  total: "totalSeconds",
+};
+
 export async function getPlayers(
   keyword: string,
   page: number,
+  sort: PlayerTimeSortField = "total",
+  order: SortOrder = "desc",
 ): Promise<Paginated<PlayerListItem>> {
   const keys = currentPeriodKeys();
   const like = `%${keyword}%`;
@@ -277,7 +291,7 @@ export async function getPlayers(
             ) AS online
        FROM player_time pt
        ${where}
-      ORDER BY totalSeconds DESC, pt.player_name ASC
+      ORDER BY ${SORT_EXPR[sort]} ${order.toUpperCase()}, pt.player_name ASC
       LIMIT ? OFFSET ?`,
     [keys.today, keys.weekStart, keys.month, ...baseParams, PAGE_SIZE, offset],
   );

@@ -2,6 +2,7 @@ import { addDays, format, startOfDay } from "date-fns";
 import type { RowDataPacket } from "mysql2/promise";
 
 import { formatDateTime, num } from "@/lib/common/format";
+import type { SortOrder } from "@/lib/common/sort";
 import { createCache } from "@/lib/server/cache";
 import { query } from "@/lib/server/mysql";
 import type { Paginated } from "@/lib/common/types";
@@ -11,6 +12,7 @@ import type {
   AuthmeOverview,
   AuthmeRecentLogin,
   AuthmeRecentRegistration,
+  AuthmeSortField,
   AuthmeTrendPoint,
 } from "@/lib/plugins/authme/types";
 
@@ -132,11 +134,20 @@ export async function getRecentRegistrations(): Promise<
   }));
 }
 
-/* ---------- 账户列表（搜索 + 服务端分页） ---------- */
+/* ---------- 账户列表（搜索 + 服务端分页 + 动态排序） ---------- */
+
+/** ORDER BY 白名单映射：regDate/lastLoginAt 是 SELECT 里的 FROM_UNIXTIME 表达式，引用别名即可。 */
+const SORT_EXPR: Record<AuthmeSortField, string> = {
+  name: "username",
+  regDate: "regDate",
+  lastLoginAt: "lastLoginAt",
+};
 
 export async function getAuthmeAccounts(
   keyword: string,
   page: number,
+  sort: AuthmeSortField = "lastLoginAt",
+  order: SortOrder = "desc",
 ): Promise<Paginated<AuthmeAccountItem>> {
   const like = `%${keyword.toLowerCase()}%`;
   const displayLike = `%${keyword}%`;
@@ -153,7 +164,7 @@ export async function getAuthmeAccounts(
             ip, world, x, y, z, isLogged
        FROM authme
        ${where}
-      ORDER BY lastlogin DESC, regdate DESC
+      ORDER BY ${SORT_EXPR[sort]} ${order.toUpperCase()}, username ASC
       LIMIT ? OFFSET ?`,
     [...baseParams, PAGE_SIZE, offset],
   );

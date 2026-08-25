@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertCircleIcon, ClipboardListIcon, CoinsIcon, GiftIcon } from "lucide-react";
 
+import { SortableHead } from "@/components/sortable-head";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,12 +32,21 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchJson } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
+import { toggleSort, type SortOrder } from "@/lib/common/sort";
 import type {
   NpcTaskEntry,
   TaskLibrary,
   TaskLibraryEntry,
   TaskPoolEntry,
 } from "@/lib/plugins/playertask/types";
+
+/** 任务库排序字段（一次性加载无分页，客户端数组排序）。 */
+type LibrarySortField = "id" | "name";
+
+const LIBRARY_DEFAULT_ORDER: Record<LibrarySortField, SortOrder> = {
+  id: "asc",
+  name: "asc",
+};
 
 /** 物品序列化文本截断展示。 */
 function ItemStackText({ value }: { value: string | null }) {
@@ -57,12 +67,48 @@ function LibraryTable({
 }: {
   tasks: TaskLibraryEntry[];
 }) {
+  const [sort, setSort] = useState<LibrarySortField>("id");
+  const [order, setOrder] = useState<SortOrder>("asc");
+  const sorted = useMemo(() => {
+    const list = [...tasks];
+    list.sort((a, b) => {
+      const cmp =
+        sort === "id"
+          ? a.id - b.id
+          : String(a.taskName).localeCompare(String(b.taskName), "zh-Hans-CN");
+      return order === "asc" ? cmp : -cmp;
+    });
+    return list;
+  }, [tasks, sort, order]);
+
+  function handleSort(field: LibrarySortField) {
+    const next = toggleSort(
+      { field: sort, order },
+      field,
+      LIBRARY_DEFAULT_ORDER[field],
+    );
+    setSort(next.field);
+    setOrder(next.order);
+  }
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-16">ID</TableHead>
-          <TableHead>任务名称</TableHead>
+          <SortableHead<LibrarySortField>
+            label="ID"
+            field="id"
+            sort={sort}
+            order={order}
+            onSort={handleSort}
+          />
+          <SortableHead<LibrarySortField>
+            label="任务名称"
+            field="name"
+            sort={sort}
+            order={order}
+            onSort={handleSort}
+          />
           <TableHead>类型</TableHead>
           <TableHead>稀有度</TableHead>
           <TableHead>任务要求</TableHead>
@@ -71,7 +117,7 @@ function LibraryTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {tasks.map((task) => (
+        {sorted.map((task) => (
           <TableRow key={task.id}>
             <TableCell>{task.id}</TableCell>
             <TableCell className="font-medium">

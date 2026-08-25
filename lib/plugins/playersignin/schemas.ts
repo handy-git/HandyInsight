@@ -5,6 +5,8 @@ export const signInTrendRangeSchema = z.enum(["7d", "30d"]).default("7d");
 export const signInPlayersQuerySchema = z.object({
   keyword: z.string().trim().max(64).default(""),
   page: z.coerce.number().int().min(1).default(1),
+  sort: z.enum(["name", "total", "month", "last", "cards"]).default("total"),
+  order: z.enum(["asc", "desc"]).default("desc"),
 });
 
 export const signInPageQuerySchema = z.object({

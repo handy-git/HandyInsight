@@ -8,9 +8,11 @@ import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   return withPlugin("playercurrency", async () => {
-    const { keyword, page } = currencyPlayersQuerySchema.parse(
+    const { keyword, page, sort, order } = currencyPlayersQuerySchema.parse(
       searchParamsObject(request),
     );
-    return NextResponse.json(await getCurrencyPlayers(keyword, page));
+    return NextResponse.json(
+      await getCurrencyPlayers(keyword, page, sort, order),
+    );
   });
 }

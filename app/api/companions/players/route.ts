@@ -8,9 +8,9 @@ import { searchParamsObject, withPlugin } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   return withPlugin("companions", async () => {
-    const { keyword, page } = companionsPlayersQuerySchema.parse(
+    const { keyword, page, sort, order } = companionsPlayersQuerySchema.parse(
       searchParamsObject(request),
     );
-    return NextResponse.json(await getCompanionsPlayers(keyword, page));
+    return NextResponse.json(await getCompanionsPlayers(keyword, page, sort, order));
   });
 }

@@ -5,6 +5,8 @@ export const authmeTrendRangeSchema = z.enum(["7d", "30d"]).default("7d");
 export const authmePlayersQuerySchema = z.object({
   keyword: z.string().trim().max(64).default(""),
   page: z.coerce.number().int().min(1).default(1),
+  sort: z.enum(["name", "regDate", "lastLoginAt"]).default("lastLoginAt"),
+  order: z.enum(["asc", "desc"]).default("desc"),
 });
 
 export const authmeUsernameSchema = z

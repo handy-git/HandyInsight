@@ -2,6 +2,28 @@
 
 import type { SortOrder } from "@/lib/common/sort";
 
+/** 地标类型默认枚举（warp.type 存库值 → 中文标签）。 */
+export const WARP_TYPE_LABELS: Record<string, string> = {
+  architect: "建筑",
+  shop: "商店",
+  red_stone: "红石",
+  brush_monster: "刷怪场",
+  other: "其他",
+};
+
+/** 地标类型展示：已知默认类型转中文，未知/自定义类型透传原值。 */
+export function warpTypeLabel(type: string): string {
+  return WARP_TYPE_LABELS[type] ?? type;
+}
+
+/** 筛选输入反查：中文标签 → 存库 key；其余（已是 key 或自定义类型）原样返回。 */
+export function warpTypeKey(input: string): string {
+  for (const [key, label] of Object.entries(WARP_TYPE_LABELS)) {
+    if (label === input) return key;
+  }
+  return input;
+}
+
 /** 玩家列表可排序字段。 */
 export type WarpPlayerSortField =
   | "name"

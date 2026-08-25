@@ -43,6 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
 import type { WarpDetail } from "@/lib/plugins/playerwarp/types";
+import { warpTypeLabel } from "@/lib/plugins/playerwarp/types";
 
 export default function WarpDetailPage({
   params,
@@ -153,7 +154,7 @@ export default function WarpDetailPage({
             )}
             {detail.type && (
               <Badge variant="secondary">
-                <McText text={detail.type} />
+                <McText text={warpTypeLabel(detail.type)} />
               </Badge>
             )}
           </CardTitle>

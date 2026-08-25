@@ -50,6 +50,8 @@ import { toggleSort, type SortOrder } from "@/lib/common/sort";
 import type { Paginated } from "@/lib/common/types";
 import {
   WARP_LIST_DEFAULT_ORDER,
+  warpTypeKey,
+  warpTypeLabel,
   type WarpListEntry,
   type WarpListSortField,
 } from "@/lib/plugins/playerwarp/types";
@@ -111,7 +113,8 @@ export default function WarpListPage() {
     setPage(1);
     setFilters({
       keyword: input.trim(),
-      type: typeInput.trim(),
+      // 中文标签（如「建筑」）反查存库 key（architect），已是 key 或自定义类型原样透传
+      type: warpTypeKey(typeInput.trim()),
       server: serverInput.trim(),
     });
   }
@@ -167,7 +170,7 @@ export default function WarpListPage() {
           </InputGroup>
           <Input
             className="w-40"
-            placeholder="类型（如 传送点）"
+            placeholder="类型（如 建筑）"
             value={typeInput}
             onChange={(event) => setTypeInput(event.target.value)}
             onKeyDown={(event) => {
@@ -302,7 +305,7 @@ export default function WarpListPage() {
                     <TableCell>
                       {warp.type ? (
                         <Badge variant="outline">
-                          <McText text={warp.type} />
+                          <McText text={warpTypeLabel(warp.type)} />
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground">—</span>

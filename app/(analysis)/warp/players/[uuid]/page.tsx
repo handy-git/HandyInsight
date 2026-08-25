@@ -54,6 +54,7 @@ import type {
   WarpEntry,
   WarpPlayerDetail,
 } from "@/lib/plugins/playerwarp/types";
+import { warpTypeLabel } from "@/lib/plugins/playerwarp/types";
 
 function WarpRow({ warp }: { warp: WarpEntry }) {
   const router = useRouter();
@@ -76,7 +77,7 @@ function WarpRow({ warp }: { warp: WarpEntry }) {
       <TableCell>
       {warp.type ? (
         <Badge variant="outline">
-          <McText text={warp.type} />
+          <McText text={warpTypeLabel(warp.type)} />
         </Badge>
       ) : (
           <span className="text-muted-foreground">—</span>

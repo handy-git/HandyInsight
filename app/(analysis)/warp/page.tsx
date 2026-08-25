@@ -38,6 +38,7 @@ import {
 import { fetchJson, formatNumber } from "@/lib/common/format";
 import { McText } from "@/lib/common/mc-text";
 import type { WarpOverview } from "@/lib/plugins/playerwarp/types";
+import { warpTypeLabel } from "@/lib/plugins/playerwarp/types";
 
 export default function WarpDashboardPage() {
   const router = useRouter();
@@ -228,7 +229,7 @@ export default function WarpDashboardPage() {
               <div className="flex flex-wrap gap-2">
                 {overview.typeStats.map((stat) => (
                   <Badge key={stat.key} variant="outline" className="gap-1.5 py-1.5">
-                    <McText text={stat.key} />
+                    <McText text={warpTypeLabel(stat.key)} />
                     <span className="text-muted-foreground">{stat.total} 个</span>
                   </Badge>
                 ))}
@@ -323,7 +324,7 @@ export default function WarpDashboardPage() {
                     <TableCell>
                       {warp.type ? (
                         <Badge variant="outline">
-                          <McText text={warp.type} />
+                          <McText text={warpTypeLabel(warp.type)} />
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground">—</span>

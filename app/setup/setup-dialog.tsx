@@ -584,7 +584,7 @@ export function SettingsDialog({
                   {enabledPlugins === null ? (
                     <div className="flex flex-col gap-2">
                       {Array.from({ length: 3 }).map((_, index) => (
-                        <Skeleton key={index} className="h-14 w-full" />
+                        <Skeleton key={index} className="h-10 w-full" />
                       ))}
                     </div>
                   ) : pluginOrder.length === 0 ? (
@@ -592,29 +592,31 @@ export function SettingsDialog({
                       当前没有已启用的插件。
                     </p>
                   ) : (
-                    <DndContext
-                      sensors={dragSensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handlePluginDragEnd}
-                    >
-                      <SortableContext
-                        items={pluginOrder.map((plugin) => plugin.id)}
-                        strategy={verticalListSortingStrategy}
+                    <div className="max-h-[min(360px,50vh)] overflow-y-auto pr-1">
+                      <DndContext
+                        sensors={dragSensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handlePluginDragEnd}
                       >
-                        <div className="flex select-none flex-col gap-2">
-                          {pluginOrder.map((plugin) => (
-                            <SortablePluginRow
-                              key={plugin.id}
-                              plugin={plugin}
-                              shown={!prefs.hidden.includes(plugin.id)}
-                              onToggle={(checked) =>
-                                togglePluginShown(plugin.id, checked)
-                              }
-                            />
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
+                        <SortableContext
+                          items={pluginOrder.map((plugin) => plugin.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="flex select-none flex-col gap-2">
+                            {pluginOrder.map((plugin) => (
+                              <SortablePluginRow
+                                key={plugin.id}
+                                plugin={plugin}
+                                shown={!prefs.hidden.includes(plugin.id)}
+                                onToggle={(checked) =>
+                                  togglePluginShown(plugin.id, checked)
+                                }
+                              />
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    </div>
                   )}
                   <p className="text-xs text-muted-foreground">
                     开关只控制侧边栏显示，不影响数据采集与接口。
@@ -678,9 +680,9 @@ function SortablePluginRow({
       >
         <GripVerticalIcon className="size-4" />
       </button>
-      <div className="flex flex-1 flex-col">
-        <span className="text-sm font-medium">{plugin.name}</span>
-        <span className="text-xs text-muted-foreground">
+      <div className="flex min-w-0 flex-1 items-baseline gap-2">
+        <span className="shrink-0 text-sm font-medium">{plugin.name}</span>
+        <span className="truncate text-xs text-muted-foreground">
           {plugin.description}
         </span>
       </div>

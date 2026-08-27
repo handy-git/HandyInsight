@@ -13,6 +13,7 @@ import {
   CoinsIcon,
   CrownIcon,
   EggIcon,
+  GiftIcon,
   HammerIcon,
   KeyRoundIcon,
   LayoutDashboardIcon,
@@ -24,6 +25,7 @@ import {
   ShieldCheckIcon,
   ShieldIcon,
   SwordsIcon,
+  TrophyIcon,
   UsersIcon,
 } from "lucide-react";
 
@@ -159,6 +161,14 @@ const PLUGIN_NAV: Record<
     items: [
       { href: "/mypet", label: "宠物总览", icon: EggIcon },
       { href: "/mypet/players", label: "宠物玩家", icon: UsersIcon },
+    ],
+  },
+  playertop: {
+    label: "PlayerTop · 排行",
+    items: [
+      { href: "/top", label: "排行总览", icon: TrophyIcon },
+      { href: "/top/ranking", label: "排行榜", icon: TrophyIcon },
+      { href: "/top/logs", label: "发奖记录", icon: GiftIcon },
     ],
   },
 };

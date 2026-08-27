@@ -172,6 +172,16 @@ export interface UnifiedPlayerDetail {
     /** 直接权限数（缺表为 null） */
     directPermissionCount: number | null;
   } | null;
+  playertop: {
+    /** 上榜排行数 */
+    rankCount: number;
+    /** 最佳排名（数值最小），未上榜为 null */
+    bestRank: number | null;
+    /** 最佳排名对应的排行榜 */
+    bestPapi: string | null;
+    /** 最近上榜更新时间 */
+    lastUpdateAt: string | null;
+  } | null;
 }
 
 export interface TimelineEvent {

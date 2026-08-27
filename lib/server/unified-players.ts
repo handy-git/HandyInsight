@@ -25,6 +25,7 @@ import { getCurrencyPlayerSummary } from "@/lib/plugins/playercurrency/queries";
 import { getIntensifyPlayerDetail } from "@/lib/plugins/playerintensify/queries";
 import { getGuildPlayerSummary } from "@/lib/plugins/playerguild/queries";
 import { getLuckPermsPlayerSummary } from "@/lib/plugins/luckperms/queries";
+import { getTopPlayerSummary } from "@/lib/plugins/playertop/queries";
 import { createCache } from "@/lib/server/cache";
 import {
   buildPlayerRegistry,
@@ -595,6 +596,20 @@ const DETAIL_SOURCES: readonly DetailSource[] = [
       }
     },
   },
+  {
+    pluginId: "playertop",
+    collect: async ({ uuid, detail }) => {
+      const summary = await getTopPlayerSummary(uuid);
+      if (summary) {
+        detail.playertop = {
+          rankCount: summary.rankCount,
+          bestRank: summary.bestRank,
+          bestPapi: summary.bestPapi,
+          lastUpdateAt: summary.lastUpdateAt,
+        };
+      }
+    },
+  },
 ];
 
 /** 统一玩家详情（30 秒缓存）：并行编排各插件已有查询。 */
@@ -631,6 +646,7 @@ async function loadUnifiedPlayerDetail(
     intensify: null,
     guild: null,
     luckperms: null,
+    playertop: null,
   };
 
   const active = DETAIL_SOURCES.filter(

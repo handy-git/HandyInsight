@@ -24,6 +24,7 @@ import {
   PawPrintIcon,
   ShieldCheckIcon,
   TicketIcon,
+  TrophyIcon,
 } from "lucide-react";
 
 import { StatTile } from "@/components/stat-tile";
@@ -265,7 +266,8 @@ export default function UnifiedPlayerDetailPage({
             detail.playercurrency ||
             detail.intensify ||
             detail.guild ||
-            detail.luckperms) && (
+            detail.luckperms ||
+            detail.playertop) && (
             <div className="mt-4 flex flex-wrap gap-2.5">
               {detail.authme && (
                 <StatTile
@@ -370,6 +372,17 @@ export default function UnifiedPlayerDetailPage({
                   hint={
                     detail.luckperms.directPermissionCount !== null &&
                     `直接权限 ${detail.luckperms.directPermissionCount} 条`
+                  }
+                />
+              )}
+              {detail.playertop && (
+                <StatTile
+                  icon={TrophyIcon}
+                  label="排行"
+                  value={`${detail.playertop.rankCount} 个`}
+                  hint={
+                    detail.playertop.bestRank !== null &&
+                    `最佳 第 ${detail.playertop.bestRank} 名 · ${detail.playertop.bestPapi}`
                   }
                 />
               )}

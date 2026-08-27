@@ -383,3 +383,54 @@ export function McText({ text }: { text: string }) {
 
   return <>{renderSegment(text, 0)}</>;
 }
+
+/**
+ * 把可能含 Minecraft 颜色代码的多行文本拆成非空行。
+ *
+ * 兼容两种存储形态（插件不同、写入方式不同，不假设固定格式）：
+ * - JSON 数组字符串：["&7---", "&7恭喜...", "&7---"]
+ * - \n 分隔的多行纯文本
+ * 仅过滤纯空白行，不过滤任何业务内容（如游戏内的装饰分隔线 &7------）。
+ */
+function splitMcLines(raw: string): string[] {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item) => String(item).trim())
+          .filter((line) => line.length > 0);
+      }
+    } catch {
+      // 不是合法 JSON，回退按 \n 拆分
+    }
+  }
+  return trimmed
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+/**
+ * 渲染含 Minecraft 颜色代码的多行文本（message / command 字段通用）。
+ * 逐行用 McText 渲染，长行自动换行，颜色代码正确着色，分隔线原样保留。
+ */
+export function McMessage({ text }: { text: string | null }) {
+  if (!text) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  const lines = splitMcLines(text);
+  if (lines.length === 0) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <div className="flex flex-col gap-0.5">
+      {lines.map((line, index) => (
+        <div key={index} className="whitespace-pre-wrap break-words">
+          <McText text={line} />
+        </div>
+      ))}
+    </div>
+  );
+}

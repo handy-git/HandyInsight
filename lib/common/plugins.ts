@@ -108,6 +108,14 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     tables: ["luckperms_players", "luckperms_group_permissions"],
     landing: "/luckperms",
   },
+  {
+    id: "playertop",
+    name: "PlayerTop",
+    description: "玩家排行",
+    // top_papi_player 提供排行数据；top_reward_log 提供发奖记录（轻量统计）
+    tables: ["top_papi_player", "top_reward_log"],
+    landing: "/top",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

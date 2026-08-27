@@ -12,6 +12,7 @@ import {
   ClipboardListIcon,
   CoinsIcon,
   CrownIcon,
+  EggIcon,
   HammerIcon,
   KeyRoundIcon,
   LayoutDashboardIcon,
@@ -151,6 +152,13 @@ const PLUGIN_NAV: Record<
       { href: "/luckperms/groups", label: "权限组", icon: KeyRoundIcon },
       { href: "/luckperms/players", label: "权限玩家", icon: UsersIcon },
       { href: "/luckperms/logs", label: "操作日志", icon: ScrollTextIcon },
+    ],
+  },
+  mypet: {
+    label: "MyPet · 宠物",
+    items: [
+      { href: "/mypet", label: "宠物总览", icon: EggIcon },
+      { href: "/mypet/players", label: "宠物玩家", icon: UsersIcon },
     ],
   },
 };

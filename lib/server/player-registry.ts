@@ -147,6 +147,16 @@ async function fetchGuildPlayer(): Promise<RowDataPacket[]> {
   );
 }
 
+async function fetchMypet(): Promise<RowDataPacket[]> {
+  // 玩家配置表提供内部 UUID 与名称；宠物表无时间列，不参与最近活跃计算
+  return query<RowDataPacket[]>(
+    `SELECT internal_uuid AS uuid, MAX(name) AS name
+       FROM mypet_players
+      WHERE name IS NOT NULL
+      GROUP BY internal_uuid`,
+  );
+}
+
 async function fetchLuckPerms(): Promise<RowDataPacket[]> {
   // 权限表提供 UUID 与（小写）用户名，只提供来源与名称；无活跃时间列
   return query<RowDataPacket[]>(
@@ -185,6 +195,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
     currencyRows,
     intensifyRows,
     guildRows,
+    mypetRows,
     luckPermsRows,
     authmeRows,
   ] = await Promise.all([
@@ -197,6 +208,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
     fetchWhen(enabled, "playercurrency", fetchPlayerCurrency),
     fetchWhen(enabled, "playerintensify", fetchPlayerIntensify),
     fetchWhen(enabled, "playerguild", fetchGuildPlayer),
+    fetchWhen(enabled, "mypet", fetchMypet),
     fetchWhen(enabled, "luckperms", fetchLuckPerms),
     fetchWhen(enabled, "authme", fetchAuthme),
   ]);
@@ -385,6 +397,27 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playerguild"],
+          lastActiveAt: null,
+        });
+      }
+    }
+  }
+
+  if (enabled.has("mypet")) {
+    for (const row of mypetRows) {
+      const uuid = String(row.uuid);
+      const name = row.name ? String(row.name) : uuid.slice(0, 8);
+      nameToUuid.set(normalizeName(name), uuid);
+      const existing = byUuid.get(uuid);
+      if (existing) {
+        existing.sources.push("mypet");
+      } else {
+        byUuid.set(uuid, {
+          key: uuid,
+          uuid,
+          name,
+          registeredAt: null,
+          sources: ["mypet"],
           lastActiveAt: null,
         });
       }

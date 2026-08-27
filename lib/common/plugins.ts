@@ -94,6 +94,14 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     landing: "/guild",
   },
   {
+    id: "mypet",
+    name: "MyPet",
+    description: "宠物系统",
+    // pets 提供统计数据；players 提供 owner_uuid 的玩家名解析（pets 表无名字段）
+    tables: ["mypet_pets", "mypet_players"],
+    landing: "/mypet",
+  },
+  {
     id: "luckperms",
     name: "LuckPerms",
     description: "权限管理",

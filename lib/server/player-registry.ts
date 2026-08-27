@@ -147,6 +147,15 @@ async function fetchGuildPlayer(): Promise<RowDataPacket[]> {
   );
 }
 
+async function fetchLuckPerms(): Promise<RowDataPacket[]> {
+  // 权限表提供 UUID 与（小写）用户名，只提供来源与名称；无活跃时间列
+  return query<RowDataPacket[]>(
+    `SELECT uuid, MAX(username) AS name
+       FROM luckperms_players
+      GROUP BY uuid`,
+  );
+}
+
 /** 插件已启用则执行查询，否则返回空数组，便于并行取数后统一合并。 */
 function fetchWhen(
   enabled: Set<string>,
@@ -176,6 +185,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
     currencyRows,
     intensifyRows,
     guildRows,
+    luckPermsRows,
     authmeRows,
   ] = await Promise.all([
     fetchWhen(enabled, "playertime", fetchPlayerTime),
@@ -187,6 +197,7 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
     fetchWhen(enabled, "playercurrency", fetchPlayerCurrency),
     fetchWhen(enabled, "playerintensify", fetchPlayerIntensify),
     fetchWhen(enabled, "playerguild", fetchGuildPlayer),
+    fetchWhen(enabled, "luckperms", fetchLuckPerms),
     fetchWhen(enabled, "authme", fetchAuthme),
   ]);
 
@@ -374,6 +385,27 @@ export async function buildPlayerRegistry(): Promise<RegistryEntry[]> {
           name,
           registeredAt: null,
           sources: ["playerguild"],
+          lastActiveAt: null,
+        });
+      }
+    }
+  }
+
+  if (enabled.has("luckperms")) {
+    for (const row of luckPermsRows) {
+      const uuid = String(row.uuid);
+      const name = row.name ? String(row.name) : uuid.slice(0, 8);
+      nameToUuid.set(normalizeName(name), uuid);
+      const existing = byUuid.get(uuid);
+      if (existing) {
+        existing.sources.push("luckperms");
+      } else {
+        byUuid.set(uuid, {
+          key: uuid,
+          uuid,
+          name,
+          registeredAt: null,
+          sources: ["luckperms"],
           lastActiveAt: null,
         });
       }

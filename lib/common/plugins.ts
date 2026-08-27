@@ -93,6 +93,13 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     tables: ["guild_info", "guild_player"],
     landing: "/guild",
   },
+  {
+    id: "luckperms",
+    name: "LuckPerms",
+    description: "权限管理",
+    tables: ["luckperms_players", "luckperms_group_permissions"],
+    landing: "/luckperms",
+  },
 ];
 
 /** 根据数据库中实际存在的表名，解析出可启用的插件。 */

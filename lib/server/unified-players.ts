@@ -24,6 +24,7 @@ import { getWarpPlayerSummary } from "@/lib/plugins/playerwarp/queries";
 import { getCurrencyPlayerSummary } from "@/lib/plugins/playercurrency/queries";
 import { getIntensifyPlayerDetail } from "@/lib/plugins/playerintensify/queries";
 import { getGuildPlayerSummary } from "@/lib/plugins/playerguild/queries";
+import { getLuckPermsPlayerSummary } from "@/lib/plugins/luckperms/queries";
 import { createCache } from "@/lib/server/cache";
 import {
   buildPlayerRegistry,
@@ -75,6 +76,7 @@ interface PlayerStatsSnapshot {
   currencyTypes: ReadonlyMap<string, number>;
   intensifyAttempts: ReadonlyMap<string, number>;
   guildNames: ReadonlyMap<string, string>;
+  primaryGroups: ReadonlyMap<string, string>;
 }
 
 /* ---------- 统计源注册表：接入玩家列表 ---------- */
@@ -245,6 +247,21 @@ const STAT_SOURCES: readonly StatSource[] = [
       return { guildNames };
     },
   },
+  {
+    pluginId: "luckperms",
+    load: async () => {
+      const primaryGroups = new Map<string, string>();
+      const rows = await query<RowDataPacket[]>(
+        `SELECT uuid, primary_group AS primaryGroup FROM luckperms_players`,
+      );
+      for (const row of rows) {
+        if (row.uuid !== null && row.primaryGroup) {
+          primaryGroups.set(String(row.uuid), String(row.primaryGroup));
+        }
+      }
+      return { primaryGroups };
+    },
+  },
 ];
 
 /** 空快照：所有统计键的缺省容器，供未启用 / 装载失败的源保持空值。 */
@@ -262,6 +279,7 @@ function emptyStats(registry: RegistryEntry[]): PlayerStatsSnapshot {
     currencyTypes: new Map(),
     intensifyAttempts: new Map(),
     guildNames: new Map(),
+    primaryGroups: new Map(),
   };
 }
 
@@ -340,6 +358,7 @@ export async function getUnifiedPlayers(
       currencyTypes: uuid ? (stats.currencyTypes.get(uuid) ?? 0) : 0,
       intensifyAttempts: uuid ? (stats.intensifyAttempts.get(uuid) ?? 0) : 0,
       guildName: uuid ? (stats.guildNames.get(uuid) ?? null) : null,
+      primaryGroup: uuid ? (stats.primaryGroups.get(uuid) ?? null) : null,
     };
   });
 
@@ -564,6 +583,18 @@ const DETAIL_SOURCES: readonly DetailSource[] = [
       }
     },
   },
+  {
+    pluginId: "luckperms",
+    collect: async ({ uuid, detail }) => {
+      const summary = await getLuckPermsPlayerSummary(uuid);
+      if (summary) {
+        detail.luckperms = {
+          primaryGroup: summary.primaryGroup,
+          directPermissionCount: summary.directPermissionCount,
+        };
+      }
+    },
+  },
 ];
 
 /** 统一玩家详情（30 秒缓存）：并行编排各插件已有查询。 */
@@ -599,6 +630,7 @@ async function loadUnifiedPlayerDetail(
     playercurrency: null,
     intensify: null,
     guild: null,
+    luckperms: null,
   };
 
   const active = DETAIL_SOURCES.filter(

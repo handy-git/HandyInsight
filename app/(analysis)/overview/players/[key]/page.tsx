@@ -17,6 +17,7 @@ import {
   CoinsIcon,
   CrownIcon,
   HammerIcon,
+  KeyRoundIcon,
   LogInIcon,
   MapPinIcon,
   MedalIcon,
@@ -263,7 +264,8 @@ export default function UnifiedPlayerDetailPage({
             detail.playerwarp ||
             detail.playercurrency ||
             detail.intensify ||
-            detail.guild) && (
+            detail.guild ||
+            detail.luckperms) && (
             <div className="mt-4 flex flex-wrap gap-2.5">
               {detail.authme && (
                 <StatTile
@@ -352,6 +354,23 @@ export default function UnifiedPlayerDetailPage({
                     <McText text={detail.guild.guildName} />
                   }
                   hint={`${detail.guild.role} · 总贡献 ${formatNumber(detail.guild.totalMoney)}`}
+                />
+              )}
+              {detail.luckperms && (
+                <StatTile
+                  icon={KeyRoundIcon}
+                  label="权限组"
+                  value={
+                    detail.luckperms.primaryGroup ? (
+                      <McText text={detail.luckperms.primaryGroup} />
+                    ) : (
+                      "—"
+                    )
+                  }
+                  hint={
+                    detail.luckperms.directPermissionCount !== null &&
+                    `直接权限 ${detail.luckperms.directPermissionCount} 条`
+                  }
                 />
               )}
             </div>

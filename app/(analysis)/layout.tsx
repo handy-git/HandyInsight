@@ -13,12 +13,15 @@ import {
   CoinsIcon,
   CrownIcon,
   HammerIcon,
+  KeyRoundIcon,
   LayoutDashboardIcon,
   MapPinIcon,
   MedalIcon,
   PawPrintIcon,
+  ScrollTextIcon,
   SettingsIcon,
   ShieldCheckIcon,
+  ShieldIcon,
   SwordsIcon,
   UsersIcon,
 } from "lucide-react";
@@ -139,6 +142,15 @@ const PLUGIN_NAV: Record<
     items: [
       { href: "/guild", label: "公会总览", icon: CrownIcon },
       { href: "/guild/list", label: "公会列表", icon: SwordsIcon },
+    ],
+  },
+  luckperms: {
+    label: "LuckPerms · 权限",
+    items: [
+      { href: "/luckperms", label: "权限总览", icon: ShieldIcon },
+      { href: "/luckperms/groups", label: "权限组", icon: KeyRoundIcon },
+      { href: "/luckperms/players", label: "权限玩家", icon: UsersIcon },
+      { href: "/luckperms/logs", label: "操作日志", icon: ScrollTextIcon },
     ],
   },
 };

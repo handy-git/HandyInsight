@@ -33,6 +33,8 @@ export interface UnifiedPlayerItem {
   intensifyAttempts: number;
   /** 所属公会名（PlayerGuild），未加入为 null */
   guildName: string | null;
+  /** 主权限组（LuckPerms），无记录为 null */
+  primaryGroup: string | null;
 }
 
 export interface UnifiedPlayerDetail {
@@ -163,6 +165,12 @@ export interface UnifiedPlayerDetail {
     die: number;
     /** 加入公会时间 */
     joinTime: string | null;
+  } | null;
+  luckperms: {
+    /** 主权限组 */
+    primaryGroup: string | null;
+    /** 直接权限数（缺表为 null） */
+    directPermissionCount: number | null;
   } | null;
 }
 

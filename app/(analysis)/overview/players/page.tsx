@@ -177,6 +177,7 @@ export default function UnifiedPlayersPage() {
                 <TableRow>
                   <TableHead>玩家</TableHead>
                   <TableHead>公会</TableHead>
+                  <TableHead>权限组</TableHead>
                   <TableHead>注册时间</TableHead>
                   <TableHead className="text-right">总时长</TableHead>
                   <TableHead className="text-right">签到</TableHead>
@@ -214,6 +215,18 @@ export default function UnifiedPlayersPage() {
                       {player.guildName ? (
                         <span className="block truncate" title={player.guildName}>
                           <McText text={player.guildName} />
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-32">
+                      {player.primaryGroup ? (
+                        <span
+                          className="block truncate"
+                          title={player.primaryGroup}
+                        >
+                          <McText text={player.primaryGroup} />
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>

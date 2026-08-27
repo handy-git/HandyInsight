@@ -17,9 +17,9 @@ export interface UnifiedPlayerItem {
   online: boolean;
   totalSeconds: number;
   totalSigns: number;
-  /** 拥有宠物数（CompanionsPlus） */
+  /** 拥有小精灵数（CompanionsPlus） */
   companionCount: number;
-  /** 宠物货币（CompanionsPlus） */
+  /** 小精灵货币（CompanionsPlus） */
   companionCoins: number | null;
   /** 称号币（PlayerTitle） */
   titleCoins: number | null;
@@ -73,11 +73,11 @@ export interface UnifiedPlayerDetail {
     z: number;
   } | null;
   companions: {
-    /** 拥有宠物数 */
+    /** 拥有小精灵数 */
     totalCompanions: number;
-    /** 宠物货币 */
+    /** 小精灵货币 */
     coins: number | null;
-    /** 出战宠物 */
+    /** 出战小精灵 */
     activeCompanion: string | null;
     /** 最高能力等级 */
     maxAbilityLevel: number;

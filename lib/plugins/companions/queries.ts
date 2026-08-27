@@ -45,7 +45,7 @@ export async function getCompanionsOverview(): Promise<CompanionsOverview> {
   });
 }
 
-/** 热门宠物排行（按持有玩家数）。 */
+/** 热门小精灵排行（按持有玩家数）。 */
 export async function getCompanionsRanking(): Promise<CompanionsRankEntry[]> {
   return cached("ranking", async () => {
     const rows = await query<RowDataPacket[]>(
@@ -143,7 +143,7 @@ export async function getCompanionsPlayers(
   };
 }
 
-/* ---------- 玩家宠物详情 ---------- */
+/* ---------- 玩家小精灵详情 ---------- */
 
 export async function getCompanionsPlayerDetail(
   uuid: string,

@@ -332,7 +332,7 @@ export default function UnifiedPlayerDetailPage({
               {detail.companions && (
                 <StatTile
                   icon={PawPrintIcon}
-                  label="宠物"
+                  label="小精灵"
                   value={`${detail.companions.totalCompanions} 只`}
                   hint={
                     detail.companions.activeCompanion &&

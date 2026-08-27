@@ -79,7 +79,7 @@ async function fetchAuthme(): Promise<RowDataPacket[]> {
 }
 
 async function fetchCompanions(): Promise<RowDataPacket[]> {
-  // 宠物表没有时间列，不参与最近活跃计算，只提供来源与名称
+  // 小精灵表没有时间列，不参与最近活跃计算，只提供来源与名称
   return query<RowDataPacket[]>(
     `SELECT player_uuid AS uuid, MAX(player_name) AS name
        FROM companions_owned

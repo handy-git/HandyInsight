@@ -95,10 +95,10 @@ const PLUGIN_NAV: Record<
     ],
   },
   companions: {
-    label: "CompanionsPlus · 宠物",
+    label: "CompanionsPlus · 小精灵",
     items: [
-      { href: "/companions", label: "宠物总览", icon: PawPrintIcon },
-      { href: "/companions/players", label: "宠物玩家", icon: UsersIcon },
+      { href: "/companions", label: "小精灵总览", icon: PawPrintIcon },
+      { href: "/companions/players", label: "小精灵玩家", icon: UsersIcon },
     ],
   },
   playertitle: {

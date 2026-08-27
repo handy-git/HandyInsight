@@ -64,11 +64,11 @@ export default function CompanionsPlayerDetailPage({
     return (
       <Alert variant="destructive">
         <AlertCircleIcon />
-        <AlertTitle>加载宠物详情失败</AlertTitle>
+        <AlertTitle>加载小精灵详情失败</AlertTitle>
         <AlertDescription>
           {error}
           <Link href="/companions/players" className="ml-2 underline">
-            返回宠物玩家
+            返回小精灵玩家
           </Link>
         </AlertDescription>
       </Alert>
@@ -95,7 +95,7 @@ export default function CompanionsPlayerDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink render={<Link href="/companions/players" />}>
-              宠物玩家
+              小精灵玩家
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -137,9 +137,9 @@ export default function CompanionsPlayerDetailPage({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "拥有宠物", value: `${detail.companions.length} 只` },
+          { title: "拥有小精灵", value: `${detail.companions.length} 只` },
           {
-            title: "宠物货币",
+            title: "小精灵货币",
             value:
               detail.coins === null
                 ? "—"
@@ -168,14 +168,14 @@ export default function CompanionsPlayerDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>宠物列表</CardTitle>
+          <CardTitle>小精灵列表</CardTitle>
           <CardDescription>按能力等级排序</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>宠物</TableHead>
+                <TableHead>小精灵</TableHead>
                 <TableHead>自定义名称</TableHead>
                 <TableHead>装备</TableHead>
                 <TableHead>名称可见</TableHead>
@@ -216,7 +216,7 @@ export default function CompanionsPlayerDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>装备列表</CardTitle>
-          <CardDescription>该玩家宠物装备的分配情况</CardDescription>
+          <CardDescription>该玩家小精灵装备的分配情况</CardDescription>
         </CardHeader>
         <CardContent>
           {detail.equipments.length === 0 ? (
@@ -226,7 +226,7 @@ export default function CompanionsPlayerDetailPage({
                   <PawPrintIcon />
                 </EmptyMedia>
                 <EmptyTitle>暂无装备</EmptyTitle>
-                <EmptyDescription>该玩家没有宠物装备。</EmptyDescription>
+                <EmptyDescription>该玩家没有小精灵装备。</EmptyDescription>
               </EmptyHeader>
             </Empty>
           ) : (
@@ -234,7 +234,7 @@ export default function CompanionsPlayerDetailPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>装备</TableHead>
-                  <TableHead>使用的宠物</TableHead>
+                  <TableHead>使用的小精灵</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

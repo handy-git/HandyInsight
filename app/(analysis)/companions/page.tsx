@@ -75,11 +75,11 @@ export default function CompanionsDashboardPage() {
     <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "拥有宠物的玩家", value: overview?.totalPlayers, suffix: "人" },
-          { title: "当前出战宠物", value: overview?.activePlayers, suffix: "只" },
-          { title: "宠物总数量", value: overview?.totalCompanions, suffix: "只" },
+          { title: "拥有小精灵的玩家", value: overview?.totalPlayers, suffix: "人" },
+          { title: "当前出战小精灵", value: overview?.activePlayers, suffix: "只" },
+          { title: "小精灵总数量", value: overview?.totalCompanions, suffix: "只" },
           {
-            title: "宠物货币总量",
+            title: "小精灵货币总量",
             value: overview ? formatCoins(overview.totalCoins) : undefined,
           },
         ].map((card) => (
@@ -108,7 +108,7 @@ export default function CompanionsDashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>热门宠物排行</CardTitle>
+            <CardTitle>热门小精灵排行</CardTitle>
             <CardDescription>按持有玩家数统计</CardDescription>
           </CardHeader>
           <CardContent>
@@ -120,8 +120,8 @@ export default function CompanionsDashboardPage() {
                   <EmptyMedia variant="icon">
                     <PawPrintIcon />
                   </EmptyMedia>
-                  <EmptyTitle>暂无宠物数据</EmptyTitle>
-                  <EmptyDescription>还没有玩家获得宠物。</EmptyDescription>
+                  <EmptyTitle>暂无小精灵数据</EmptyTitle>
+                  <EmptyDescription>还没有玩家获得小精灵。</EmptyDescription>
                 </EmptyHeader>
               </Empty>
             ) : (
@@ -129,7 +129,7 @@ export default function CompanionsDashboardPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-16">名次</TableHead>
-                    <TableHead>宠物</TableHead>
+                    <TableHead>小精灵</TableHead>
                     <TableHead className="text-right">持有玩家</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -170,7 +170,7 @@ export default function CompanionsDashboardPage() {
                     <PawPrintIcon />
                   </EmptyMedia>
                   <EmptyTitle>暂无装备数据</EmptyTitle>
-                  <EmptyDescription>还没有玩家给宠物配备装备。</EmptyDescription>
+                  <EmptyDescription>还没有玩家给小精灵配备装备。</EmptyDescription>
                 </EmptyHeader>
               </Empty>
             ) : (

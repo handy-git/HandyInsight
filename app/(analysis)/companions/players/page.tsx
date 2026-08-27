@@ -117,9 +117,9 @@ export default function CompanionsPlayersPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>宠物玩家</CardTitle>
+        <CardTitle>小精灵玩家</CardTitle>
         <CardDescription>
-          按玩家名称搜索，点击表头排序，点击行查看宠物详情
+          按玩家名称搜索，点击表头排序，点击行查看小精灵详情
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -156,7 +156,7 @@ export default function CompanionsPlayersPage() {
               <EmptyDescription>
                 {keyword
                   ? `没有名称包含“${keyword}”的玩家。`
-                  : "还没有玩家拥有宠物。"}
+                  : "还没有玩家拥有小精灵。"}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -177,9 +177,9 @@ export default function CompanionsPlayersPage() {
                     order={order}
                     onSort={handleSort}
                   />
-                  <TableHead>出战宠物</TableHead>
+                  <TableHead>出战小精灵</TableHead>
                   <SortableHead<CompanionsSortField>
-                    label="宠物数"
+                    label="小精灵数"
                     field="count"
                     sort={sort}
                     order={order}
@@ -195,7 +195,7 @@ export default function CompanionsPlayersPage() {
                     align="right"
                   />
                   <SortableHead<CompanionsSortField>
-                    label="宠物货币"
+                    label="小精灵货币"
                     field="coins"
                     sort={sort}
                     order={order}

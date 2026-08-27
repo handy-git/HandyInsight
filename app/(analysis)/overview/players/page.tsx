@@ -181,8 +181,8 @@ export default function UnifiedPlayersPage() {
                   <TableHead>注册时间</TableHead>
                   <TableHead className="text-right">总时长</TableHead>
                   <TableHead className="text-right">签到</TableHead>
-                  <TableHead className="text-right">宠物</TableHead>
-                  <TableHead className="text-right">宠物币</TableHead>
+                  <TableHead className="text-right">小精灵</TableHead>
+                  <TableHead className="text-right">小精灵币</TableHead>
                   <TableHead className="text-right">称号币</TableHead>
                   <TableHead className="text-right">任务币</TableHead>
                   <TableHead className="text-right">强化</TableHead>

@@ -42,7 +42,7 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
   {
     id: "companions",
     name: "CompanionsPlus",
-    description: "宠物系统",
+    description: "小精灵系统",
     tables: [
       "companions_active",
       "companions_coin",

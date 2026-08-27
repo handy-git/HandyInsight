@@ -15,7 +15,7 @@ export async function GET(
     const detail = await getCompanionsPlayerDetail(uuid);
     if (!detail) {
       return NextResponse.json(
-        { ok: false, message: "未找到该玩家的宠物数据" },
+        { ok: false, message: "未找到该玩家的小精灵数据" },
         { status: 404 },
       );
     }

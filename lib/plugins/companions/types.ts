@@ -12,19 +12,19 @@ export const COMPANIONS_DEFAULT_ORDER: Record<CompanionsSortField, SortOrder> = 
 };
 
 export interface CompanionsOverview {
-  /** 拥有宠物的玩家数 */
+  /** 拥有小精灵的玩家数 */
   totalPlayers: number;
-  /** 当前出战宠物的玩家数 */
+  /** 当前出战小精灵的玩家数 */
   activePlayers: number;
-  /** 宠物总数量 */
+  /** 小精灵总数量 */
   totalCompanions: number;
-  /** 宠物货币总量 */
+  /** 小精灵货币总量 */
   totalCoins: number;
 }
 
 export interface CompanionsRankEntry {
   rank: number;
-  /** 宠物标识 */
+  /** 小精灵标识 */
   companion: string;
   /** 持有玩家数 */
   players: number;
@@ -40,13 +40,13 @@ export interface CompanionsEquipmentEntry {
 export interface CompanionsPlayerItem {
   uuid: string;
   name: string;
-  /** 拥有宠物数 */
+  /** 拥有小精灵数 */
   companionCount: number;
-  /** 出战宠物 */
+  /** 出战小精灵 */
   activeCompanion: string | null;
   /** 最高能力等级 */
   maxAbilityLevel: number;
-  /** 宠物货币 */
+  /** 小精灵货币 */
   coins: number | null;
 }
 
@@ -60,7 +60,7 @@ export interface CompanionsOwnedItem {
 
 export interface CompanionsEquipmentItem {
   equipment: string;
-  /** 该装备使用的宠物 */
+  /** 该装备使用的小精灵 */
   companion: string | null;
 }
 

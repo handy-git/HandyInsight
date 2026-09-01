@@ -1,0 +1,34 @@
+# 依赖与缓存：不进入构建上下文
+node_modules
+.pnpm-store
+.pnpm-debug.log*
+
+# Next.js 构建产物 / 缓存
+.next
+out
+*.tsbuildinfo
+next-env.d.ts
+
+# 运行期数据（含 MySQL 凭据）
+.data
+.env*
+!.env.example
+
+# 仓库元信息 / 编辑器 / WorkBuddy
+.git
+.gitignore
+.idea
+.workbuddy
+.DS_Store
+
+# 文档与计划文件（运行时不需要）
+README.md
+AGENTS.md
+CLAUDE.md
+LICENSE
+计划.md
+docs
+
+# 覆盖率与测试
+coverage
+.vscode

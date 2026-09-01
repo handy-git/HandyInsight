@@ -1,0 +1,34 @@
+# HandyInsight Docker 部署
+#
+# 用法：
+#   1. 修改下方 AUTH_USERNAME / AUTH_PASSWORD（登录账号密码，必填）
+#   2. 二选一配置 MySQL：
+#      - 通过环境变量直连（取消 MYSQL_* 注释并填写，设置后页面配置项只读）
+#      - 保持 MYSQL_* 注释，稍后在页面中填写并保存（写入 /app/.data/mysql.json）
+#   3. 执行：docker compose up -d
+#   4. 打开 http://localhost:3000
+
+services:
+  handy-insight:
+    image: crpi-5gak5n71wxx1qpzi.cn-shanghai.personal.cr.aliyuncs.com/handyplus/handy-insight:latest
+    container_name: handy-insight
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # 登录账号（必需）
+      AUTH_USERNAME: admin
+      AUTH_PASSWORD: change-me
+      # MySQL 连接（可选，设置任意 MYSQL_* 后优先于设置页配置）
+      # MYSQL_HOST: 127.0.0.1
+      # MYSQL_PORT: "3306"
+      # MYSQL_DATABASE: mc
+      # MYSQL_USER: root
+      # MYSQL_PASSWORD: change-me
+      # MYSQL_SSL: "false"
+    volumes:
+      # 持久化设置页写入的 MySQL 配置；命名卷由 Docker 自动处理权限，无需额外配置
+      - handy-insight-data:/app/.data
+
+volumes:
+  handy-insight-data:

@@ -87,11 +87,46 @@
 
 ## 快速开始
 
-不想在本地搭建环境？可以直接一键部署到 EdgeOne Makers（腾讯云）：
+以下四种方式任选其一。
+
+### 1. EdgeOne Makers（一键部署）
+
+不想自建环境？一键部署到 EdgeOne Makers（腾讯云）：
 
 [![使用 EdgeOne Makers 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/makers/new?repository-url=https%3A%2F%2Fgithub.com%2Fhandy-git%2FHandyInsight&install-command=pnpm%20install&build-command=pnpm%20build&env=AUTH_USERNAME%2CAUTH_PASSWORD%2CMYSQL_HOST%2CMYSQL_PORT%2CMYSQL_DATABASE%2CMYSQL_USER%2CMYSQL_PASSWORD&env-description=%E9%83%A8%E7%BD%B2%E5%BF%85%E9%9C%80%EF%BC%9AAUTH_USERNAME%2FAUTH_PASSWORD%20%E4%B8%BA%E7%99%BB%E5%BD%95%E8%B4%A6%E5%8F%B7%E4%B8%8E%E5%AF%86%E7%A0%81%EF%BC%88%E5%BF%85%E5%A1%AB%EF%BC%89%EF%BC%9BMYSQL_*%20%E4%B8%BA%20MySQL%20%E7%9B%B4%E8%BF%9E%E9%85%8D%E7%BD%AE%EF%BC%88%E5%8F%AF%E9%80%89%EF%BC%8C%E8%AE%BE%E7%BD%AE%E5%90%8E%E4%BC%98%E5%85%88%E4%BA%8E%E8%AE%BE%E7%BD%AE%E9%A1%B5%E9%85%8D%E7%BD%AE%EF%BC%89&env-link=https%3A%2F%2Fgithub.com%2Fhandy-git%2FHandyInsight%23%E6%9C%AC%E5%9C%B0%E6%B5%8B%E8%AF%95%E9%85%8D%E7%BD%AE)
 
-或者本地运行，准备好 Node.js、pnpm 和一个可访问的 MySQL 数据库，然后运行：
+### 2. Docker Compose（推荐）
+
+公网可直接拉取预构建镜像，无需本地安装 Node.js / pnpm。仓库根目录已自带 `docker-compose.yml`。
+
+1. 编辑根目录 `docker-compose.yml`，修改 `AUTH_USERNAME` 与 `AUTH_PASSWORD`。
+2. 二选一配置 MySQL：
+   - 取消 `MYSQL_*` 注释，通过环境变量直连（设置后页面配置项只读）；
+   - 保持 `MYSQL_*` 注释，稍后在页面中填写并保存。
+3. 启动：
+
+   ```bash
+   docker compose up -d
+   ```
+
+4. 打开 <http://localhost:3000>，按提示完成设置。
+
+### 3. Docker Run
+
+```bash
+docker run -d \
+  --name handy-insight \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e AUTH_USERNAME=admin \
+  -e AUTH_PASSWORD=change-me \
+  -v handy-insight-data:/app/.data \
+  crpi-5gak5n71wxx1qpzi.cn-shanghai.personal.cr.aliyuncs.com/handyplus/handy-insight:latest
+```
+
+### 4. 本地启动
+
+准备好 Node.js、pnpm 和一个可访问的 MySQL 数据库，然后运行：
 
 ```bash
 pnpm install
@@ -104,6 +139,12 @@ pnpm dev
 2. 填写 MySQL 地址、端口、数据库名、用户名和密码。
 3. 测试连接，确认检测到至少一个支持的插件。
 4. 保存配置并进入分析面板。
+
+### 配置说明
+
+- **登录账号**：`AUTH_USERNAME` / `AUTH_PASSWORD` 为必填，缺失时无法登录。
+- **MySQL 连接**：设置任意一个 `MYSQL_*` 环境变量后，以环境变量为准，页面设置项变为只读；全部留空则通过页面填写。
+- **数据持久化（Docker）**：镜像以非 root 用户运行，配置写入 `/app/.data`。使用命名卷（如 `handy-insight-data`）会自动持久化且无需处理目录权限；如需绑定宿主机目录，请确保该目录对 uid 1001 可写。
 
 ## 本地测试配置
 

@@ -60,5 +60,8 @@ export async function login(
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
   });
-  redirect(normalizeRedirectPath(parsed.data.redirectTo));
+  // `/` 仅是入口中转页：它需要客户端水合后二次跳转，
+  // 登录后直接落到分析面板，未配置 MySQL 时由 (analysis) 布局兜底跳 /setup
+  const target = normalizeRedirectPath(parsed.data.redirectTo);
+  redirect(target === "/" ? "/overview/players" : target);
 }

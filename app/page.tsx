@@ -1,49 +1,9 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-
-import { Spinner } from "@/components/ui/spinner";
-
-interface MysqlStatus {
-  configured: boolean;
-}
+// 入口中转页：直接落到分析面板，未配置 MySQL 时
+// 由 (analysis) 布局依据 /api/mysql/status 兜底跳转 /setup
+export const dynamic = "force-dynamic";
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function redirectFromStatus() {
-      try {
-        const response = await fetch("/api/mysql/status");
-        if (cancelled) return;
-        if (response.status === 401) {
-          router.replace("/login");
-          return;
-        }
-        if (!response.ok) {
-          throw new Error("MySQL 状态请求失败");
-        }
-        const status = (await response.json()) as MysqlStatus;
-        if (cancelled) return;
-        router.replace(status.configured ? "/overview/players" : "/setup");
-      } catch {
-        if (!cancelled) router.replace("/setup");
-      }
-    }
-
-    void redirectFromStatus();
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
-
-  return (
-    <main className="flex min-h-svh items-center justify-center bg-muted/40">
-      <Spinner className="size-5" />
-      <span className="sr-only">正在加载数据库状态</span>
-    </main>
-  );
+  redirect("/overview/players");
 }
